@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { BookingRequest, BookingResponse } from '../types';
 import { brajHotels } from '../data/hotels';
+import { saveBookingToDb } from '../db/repository';
 
 const router = Router();
 
@@ -67,6 +68,11 @@ router.post('/', (req: Request, res: Response) => {
     };
 
     bookingsStore.push(newBooking);
+
+    // Asynchronously persist to MySQL database
+    saveBookingToDb(newBooking).catch((err) => {
+      console.warn(`[DB] Failed to save booking to MySQL:`, err.message);
+    });
 
     return res.status(201).json({
       success: true,

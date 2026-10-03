@@ -12,6 +12,8 @@ export interface AuditEntry {
 // In-memory audit log store (backed by database schema)
 const auditLogs: AuditEntry[] = [];
 
+import { saveAuditLogToDb } from '../../db/repository';
+
 export function logAudit(
   adminName: string,
   action: string,
@@ -35,6 +37,10 @@ export function logAudit(
   };
 
   auditLogs.unshift(entry);
+  
+  // Asynchronously persist to MySQL database
+  saveAuditLogToDb(entry).catch(() => {});
+
   return entry;
 }
 

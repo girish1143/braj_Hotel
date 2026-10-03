@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { requireRole } from '../../middleware/roleGuard';
 import { logAudit, getAuditLogs } from '../audit/auditService';
 import { brajHotels, addHotel as addBrajHotel, updateHotel as updateBrajHotel, deleteHotel as deleteBrajHotel } from '../../data/hotels';
+import { saveOnboardingSubmissionToDb, updateOnboardingStatusInDb, updateHotelStatusInDb } from '../../db/repository';
 
 // In-memory state for admin actions
 export interface AdminHotelItem {
@@ -64,6 +65,11 @@ export function submitHotelToOnboardingQueue(data: any, ip: string = '127.0.0.1'
   };
 
   adminHotels.unshift(newSubmission);
+
+  // Persist to MySQL onboarding queue table
+  saveOnboardingSubmissionToDb(newSubmission, data).catch((err) => {
+    console.warn(`[DB] Failed to save onboarding submission to MySQL:`, err.message);
+  });
 
   // Directly register into public Braj stays catalog so it displays in "Popular stays in Braj"
   const walkMin = Number(data.walkMinutesToLandmark) || 4;
@@ -398,6 +404,10 @@ router.patch('/hotels/:id/approve', (req: Request, res: Response) => {
   hotel.status = 'APPROVED';
   hotel.documentsVerified = true;
 
+  // Sync status to MySQL
+  updateOnboardingStatusInDb(hotel.id, 'APPROVED').catch(() => {});
+  updateHotelStatusInDb(hotel.id, 'APPROVED').catch(() => {});
+
   // Add to public catalog if not already present
   const existingInCatalog = brajHotels.find((h) => h.id === hotel.id);
   if (!existingInCatalog) {
@@ -442,6 +452,8 @@ router.patch('/hotels/:id/reject', (req: Request, res: Response) => {
 
   hotel.status = 'REJECTED';
   deleteBrajHotel(id);
+  updateOnboardingStatusInDb(id, 'REJECTED').catch(() => {});
+  updateHotelStatusInDb(id, 'REJECTED').catch(() => {});
 
   logAudit(
     req.user?.name || 'System Admin',
@@ -469,6 +481,10 @@ router.patch('/hotels/:id/suspend', (req: Request, res: Response) => {
   }
 
   hotel.status = hotel.status === 'SUSPENDED' ? 'APPROVED' : 'SUSPENDED';
+
+  // Sync to MySQL
+  updateOnboardingStatusInDb(id, hotel.status).catch(() => {});
+  updateHotelStatusInDb(id, hotel.status).catch(() => {});
 
   if (hotel.status === 'SUSPENDED') {
     deleteBrajHotel(id);
