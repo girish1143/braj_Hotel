@@ -1,0 +1,306 @@
+// Brijnidhi Prisma Schema - 3-Tier Role Architecture
+// Roles: SYSTEM_ADMIN, HOTEL_ADMIN, CUSTOMER
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  HOTEL_ADMIN
+  SYSTEM_ADMIN
+}
+
+enum HotelStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+enum AuditAction {
+  HOTEL_CREATED
+  HOTEL_UPDATED
+  HOTEL_APPROVED
+  HOTEL_REJECTED
+  HOTEL_SUSPENDED
+  ROOM_CREATED
+  ROOM_UPDATED
+  ROOM_DELETED
+  BOOKING_CREATED
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  PAYMENT_COMPLETED
+  PAYMENT_REFUNDED
+  USER_SUSPENDED
+  ADMIN_CREATED
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  phone         String?
+  role          Role           @default(CUSTOMER)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relationships
+  hotelAdmins   HotelAdmin[]
+  bookings      Booking[]
+  reviews       Review[]
+  favorites     Favorite[]
+  auditLogs     AuditLog[]     @relation("AdminAuditLogs")
+}
+
+model Hotel {
+  id                      String              @id @default(uuid())
+  name                    String
+  slug                    String              @unique
+  description             String
+  shortDescription        String
+  destinationSlug         String              // mathura, vrindavan, barsana, govardhan
+  destinationName         String
+  address                 String
+  nearestLandmark         String
+  distanceToMainTemple    String
+  contactPhone            String
+  contactEmail            String
+  stayType                String              // hotel, dharamshala, ashram, haveli, guesthouse
+  starRating              Int                 @default(3)
+  ratingScore             Float               @default(4.5)
+  reviewsCount            Int                 @default(0)
+  pureSatvikKitchen       Boolean             @default(true)
+  templeDarshanAssistance Boolean             @default(true)
+  status                  HotelStatus         @default(SUBMITTED)
+  checkInTime             String              @default("12:00 PM")
+  checkOutTime            String              @default("11:00 AM")
+  cancellationPolicy      String              @default("Free cancellation up to 24 hours before check-in")
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  // Relationships
+  hotelAdmins             HotelAdmin[]
+  images                  HotelImage[]
+  rooms                   Room[]
+  bookings                Booking[]
+  reviews                 Review[]
+  documents               HotelDocument[]
+  verifications           HotelVerification[]
+  favorites               Favorite[]
+  amenities               Amenity[]
+}
+
+model HotelAdmin {
+  id          String    @id @default(uuid())
+  userId      String
+  hotelId     String
+  permissions String[]  @default(["MANAGE_ROOMS", "MANAGE_BOOKINGS", "MANAGE_PRICING"])
+  status      String    @default("ACTIVE") // ACTIVE, SUSPENDED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hotel       Hotel     @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, hotelId])
+}
+
+model HotelImage {
+  id        String   @id @default(uuid())
+  hotelId   String
+  url       String
+  isPrimary Boolean  @default(false)
+  caption   String?
+  createdAt DateTime @default(now())
+
+  hotel     Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+}
+
+model Room {
+  id              String       @id @default(uuid())
+  hotelId         String
+  name            String
+  roomType        String       // Standard, Deluxe, Premium, Family Suite
+  capacity        Int          @default(2)
+  totalInventory  Int          @default(5)
+  basePrice       Float
+  weekendPrice    Float
+  bedType         String       @default("King Bed")
+  isActive        Boolean      @default(true)
+  amenities       String[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  hotel           Hotel        @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  images          RoomImage[]
+  bookings        Booking[]
+}
+
+model RoomImage {
+  id        String   @id @default(uuid())
+  roomId    String
+  url       String
+  caption   String?
+  createdAt DateTime @default(now())
+
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+model Amenity {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  icon      String?
+  hotels    Hotel[]
+}
+
+model Booking {
+  id                 String         @id @default(uuid())
+  bookingReference   String         @unique
+  userId             String?
+  hotelId            String
+  roomId             String
+  checkInDate        DateTime
+  checkOutDate       DateTime
+  totalNights        Int            @default(1)
+  guestsCount        Int            @default(2)
+  roomsCount         Int            @default(1)
+  guestName          String
+  guestEmail         String
+  guestPhone         String
+  specialRequests    String?
+  darshanAssistance  Boolean        @default(false)
+  parikramaRickshaw  Boolean        @default(false)
+  satvikThaliMeals   Boolean        @default(false)
+  roomCharges        Float
+  taxAmount          Float
+  addOnCharges       Float          @default(0)
+  grandTotal         Float
+  bookingStatus      BookingStatus  @default(CONFIRMED)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  user               User?          @relation(fields: [userId], references: [id])
+  hotel              Hotel          @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  room               Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  guests             BookingGuest[]
+  payments           Payment[]
+}
+
+model BookingGuest {
+  id          String   @id @default(uuid())
+  bookingId   String
+  fullName    String
+  age         Int?
+  idProofType String?  // Aadhaar, VoterID, Passport
+  idProofNo   String?
+
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  bookingId       String
+  transactionRef  String        @unique
+  amount          Float
+  currency        String        @default("INR")
+  paymentMethod   String        // UPI, Card, NetBanking, PayAtHotel
+  paymentStatus   PaymentStatus @default(PAID)
+  createdAt       DateTime      @default(now())
+
+  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id          String   @id @default(uuid())
+  userId      String
+  hotelId     String
+  rating      Float
+  cleanliness Float
+  templeReach Float
+  comment     String
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hotel       Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+}
+
+model Coupon {
+  id          String    @id @default(uuid())
+  code        String    @unique
+  discountPct Float
+  maxDiscount Float?
+  validUntil  DateTime
+  isActive    Boolean   @default(true)
+  description String
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  hotelId   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hotel     Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, hotelId])
+}
+
+model HotelDocument {
+  id           String   @id @default(uuid())
+  hotelId      String
+  documentType String   // TradeLicense, FSSAI_Satvik, IdentityProof, ElectricityBill
+  documentUrl  String
+  status       String   @default("PENDING") // PENDING, VERIFIED, REJECTED
+  uploadedAt   DateTime @default(now())
+
+  hotel        Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+}
+
+model HotelVerification {
+  id         String   @id @default(uuid())
+  hotelId    String
+  reviewedBy String   // Admin User ID
+  action     String   // APPROVED, REJECTED, REQUEST_CHANGES
+  notes      String?
+  reviewedAt DateTime @default(now())
+
+  hotel      Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String      @id @default(uuid())
+  adminId     String?
+  adminName   String
+  action      AuditAction
+  entityType  String      // Hotel, Room, Booking, User, Payment
+  entityId    String
+  details     String
+  ipAddress   String?
+  createdAt   DateTime    @default(now())
+
+  admin       User?       @relation("AdminAuditLogs", fields: [adminId], references: [id])
+}

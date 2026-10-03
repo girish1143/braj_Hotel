@@ -1,0 +1,314 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════════
+   BRIJNIDHI — SACRED BRAJ DHAM DESIGN SYSTEM & CSS TOKENS
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --primary-saffron: #d9531e;
+  --primary-saffron-dark: #b43f05;
+  --primary-gold: #d97706;
+  --primary-amber: #f59e0b;
+  --primary-peacock: #0284c7;
+  --primary-tulsi: #16a34a;
+  --bg-cream: #fffaf0;
+  --bg-sand: #fef6e4;
+  --bg-ivory: #fdfbf7;
+  --text-dark: #291b12;
+  --text-muted: #6b5a4e;
+  --border-gold: rgba(217, 119, 6, 0.25);
+  --border-saffron: rgba(217, 83, 30, 0.25);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: var(--text-dark);
+  background: var(--bg-cream);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Sacred selection highlight */
+::selection {
+  background: #fde68a;
+  color: #78350f;
+}
+
+::-moz-selection {
+  background: #fde68a;
+  color: #78350f;
+}
+
+/* Custom Braj Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #fef7e8;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d97706;
+  border-radius: 9999px;
+  border: 2px solid #fef7e8;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b45309;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BUTTON & COMPONENT UTILITIES
+   ═══════════════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* Radiant Sacred Saffron Primary Button */
+  .btn-primary {
+    @apply inline-flex items-center justify-center font-bold px-5 py-2.5 rounded-2xl 
+           bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white 
+           shadow-md hover:shadow-lg hover:from-amber-700 hover:to-orange-800 
+           border border-amber-500/30 active:scale-95 transition-all duration-200 cursor-pointer;
+  }
+
+  /* Elegant Temple Sandstone Secondary Button */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center font-bold px-4 py-2 rounded-2xl 
+           bg-white text-neutral-800 border border-amber-300/80 shadow-sm 
+           hover:bg-amber-50/80 hover:border-amber-400 hover:text-amber-950 
+           active:scale-95 transition-all duration-200 cursor-pointer;
+  }
+
+  /* Regal Pitambar Gold Button */
+  .btn-gold {
+    @apply inline-flex items-center justify-center font-black px-5 py-2.5 rounded-2xl 
+           bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 
+           shadow-md hover:shadow-gold-glow hover:from-amber-300 hover:to-yellow-500 
+           border border-yellow-200 active:scale-95 transition-all duration-200 cursor-pointer;
+  }
+
+  /* Krishna Mayur Peacock Button */
+  .btn-peacock {
+    @apply inline-flex items-center justify-center font-bold px-5 py-2.5 rounded-2xl 
+           bg-gradient-to-r from-sky-600 via-teal-600 to-cyan-700 text-white 
+           shadow-md hover:shadow-peacock-glow hover:from-sky-700 hover:to-teal-800 
+           border border-sky-400/40 active:scale-95 transition-all duration-200 cursor-pointer;
+  }
+
+  /* Pure 100% Satvik Herbal Button */
+  .btn-satvik {
+    @apply inline-flex items-center justify-center font-bold px-4 py-2 rounded-2xl 
+           bg-gradient-to-r from-emerald-600 to-teal-700 text-white 
+           shadow-sm hover:bg-emerald-700 active:scale-95 transition-all duration-200 cursor-pointer;
+  }
+
+  /* Golden Outline Pill Button */
+  .btn-outline-gold {
+    @apply inline-flex items-center justify-center font-bold px-4 py-2 rounded-2xl 
+           border-2 border-amber-600/70 text-amber-900 bg-amber-50/40 
+           hover:bg-amber-600 hover:text-white active:scale-95 transition-all duration-200 cursor-pointer;
+  }
+
+  /* Tactile Interactive Pill Filter */
+  .btn-pill {
+    @apply inline-flex items-center font-bold px-3.5 py-1.5 rounded-full text-xs 
+           transition-all duration-200 cursor-pointer select-none active:scale-95;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     SURFACES, CARDS & GLASS PANELS
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Temple Sandstone Card */
+  .card-temple {
+    @apply bg-white rounded-3xl border border-amber-200/80 shadow-temple 
+           transition-all duration-300 hover:-translate-y-1 hover:shadow-temple-lg hover:border-amber-400/70;
+  }
+
+  /* Gold Highlighted Sacred Card */
+  .card-temple-gold {
+    @apply bg-gradient-to-b from-amber-50/70 via-white to-amber-50/40 rounded-3xl 
+           border-2 border-amber-400/60 shadow-temple transition-all duration-300 hover:shadow-gold-glow;
+  }
+
+  /* Translucent Saffron Glass Panel */
+  .glass-saffron {
+    @apply bg-amber-950/80 backdrop-blur-md border border-amber-500/30 text-white shadow-xl;
+  }
+
+  /* Translucent Dark Temple Glass */
+  .glass-dark {
+    @apply bg-neutral-950/80 backdrop-blur-md border border-white/10 text-white shadow-2xl;
+  }
+
+  /* Translucent Golden Glass */
+  .glass-gold {
+    @apply bg-amber-500/10 backdrop-blur-lg border border-amber-400/30 text-amber-950 shadow-lg;
+  }
+
+  /* Elevated Hover Utility */
+  .card-hover {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-xl;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     BADGES & STATUS LABELS
+     ═══════════════════════════════════════════════════════════════ */
+
+  .badge-sacred {
+    @apply inline-flex items-center text-[10px] uppercase tracking-wider font-black 
+           px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300;
+  }
+
+  .badge-satvik {
+    @apply inline-flex items-center text-[10px] uppercase tracking-wider font-black 
+           px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300;
+  }
+
+  .badge-darshan {
+    @apply inline-flex items-center text-[10px] uppercase tracking-wider font-black 
+           px-2.5 py-1 rounded-full bg-sky-100 text-sky-900 border border-sky-300;
+  }
+
+  .badge-gold {
+    @apply inline-flex items-center text-[10px] uppercase tracking-wider font-black 
+           px-2.5 py-1 rounded-full bg-amber-400/20 text-amber-800 border border-amber-400;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     SACRED FORM INPUTS
+     ═══════════════════════════════════════════════════════════════ */
+
+  .input-temple {
+    @apply w-full rounded-2xl bg-amber-50/40 border border-amber-300/80 px-4 py-2.5 
+           text-sm text-neutral-900 placeholder-neutral-400 shadow-inner
+           focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 
+           transition-all duration-200;
+  }
+
+  .select-temple {
+    @apply rounded-2xl bg-amber-50/40 border border-amber-300/80 px-4 py-2.5 
+           text-sm text-neutral-900 shadow-inner cursor-pointer
+           focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 
+           transition-all duration-200;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SACRED ANIMATIONS & KEYFRAMES
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Gentle Floating */
+@keyframes subtle-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-subtle-float {
+  animation: subtle-float 3.5s ease-in-out infinite;
+}
+
+/* Diya Lamp Glow Pulsing */
+@keyframes diya-glow {
+  0%, 100% {
+    opacity: 0.85;
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 18px rgba(224, 90, 16, 0.85));
+  }
+}
+
+.animate-diya {
+  animation: diya-glow 2.8s ease-in-out infinite;
+}
+
+/* Radar Pulsing Wave for Live Darshan indicator */
+@keyframes pulse-radar {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.animate-radar {
+  animation: pulse-radar 2s infinite;
+}
+
+/* Shimmer Light pass for Golden Cards */
+@keyframes shimmer-pass {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-gold-sweep {
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(254,240,138,0.4) 50%, rgba(255,255,255,0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer-pass 3s infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ACCESSIBILITY & FOCUS CONTROLS
+   ═══════════════════════════════════════════════════════════════════ */
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #d97706;
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PRINT STYLESHEET (Devotee Booking Voucher & Darshan Pass)
+   ═══════════════════════════════════════════════════════════════════ */
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  nav,
+  footer,
+  .no-print,
+  button:not(.print-allow) {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .card-temple,
+  .card-temple-gold {
+    box-shadow: none !important;
+    border: 1px solid #cccccc !important;
+  }
+}
