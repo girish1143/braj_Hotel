@@ -70,12 +70,6 @@ export function addHotel(data: Partial<Hotel>): Hotel {
   };
 
   brajHotels.unshift(newHotel);
-
-  // Sync with MySQL
-  import('../db/repository').then(({ saveHotelToDb }) => {
-    saveHotelToDb(newHotel).catch(() => {});
-  }).catch(() => {});
-
   return newHotel;
 }
 
@@ -83,12 +77,6 @@ export function updateHotel(id: string, updates: Partial<Hotel>): Hotel | null {
   const index = brajHotels.findIndex((h) => h.id.toLowerCase() === id.toLowerCase() || h.slug.toLowerCase() === id.toLowerCase());
   if (index === -1) return null;
   brajHotels[index] = { ...brajHotels[index], ...updates };
-
-  // Sync with MySQL
-  import('../db/repository').then(({ saveHotelToDb }) => {
-    saveHotelToDb(brajHotels[index]).catch(() => {});
-  }).catch(() => {});
-
   return brajHotels[index];
 }
 
@@ -96,11 +84,5 @@ export function deleteHotel(id: string): boolean {
   const index = brajHotels.findIndex((h) => h.id.toLowerCase() === id.toLowerCase() || h.slug.toLowerCase() === id.toLowerCase());
   if (index === -1) return false;
   brajHotels.splice(index, 1);
-
-  // Sync with MySQL
-  import('../db/repository').then(({ deleteHotelFromDb }) => {
-    deleteHotelFromDb(id).catch(() => {});
-  }).catch(() => {});
-
   return true;
 }
