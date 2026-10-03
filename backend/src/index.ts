@@ -10,6 +10,7 @@ import hotelAdminRoutes from './modules/hotel-admin/hotelAdminRoutes';
 import onboardRoutes from './modules/hotels/onboardRoutes';
 import authRoutes from './modules/auth/authRoutes';
 import { authenticate } from './middleware/roleGuard';
+import { initRdsDatabase, getRdsInfo, isRdsConnected } from './db/rds';
 
 dotenv.config();
 
@@ -38,15 +39,27 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.json({
     status: 'ok',
     platform: 'Brijnidhi — Braj Hotel & Stay Platform API',
+    database: getRdsInfo(),
     rolesSupported: ['SYSTEM_ADMIN', 'HOTEL_ADMIN', 'CUSTOMER'],
     destinations: ['Mathura', 'Vrindavan', 'Barsana', 'Govardhan'],
     timestamp: new Date().toISOString()
   });
 });
 
-app.listen(PORT, () => {
+// AWS RDS Database Status endpoint
+app.get('/api/db/status', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    awsRds: getRdsInfo()
+  });
+});
+
+app.listen(PORT, async () => {
   console.log(`🌸 Brijnidhi API server running on http://localhost:${PORT}`);
   console.log(`✨ Role Architecture active: SYSTEM_ADMIN (/admin), HOTEL_ADMIN (/hotel-admin), CUSTOMER (/stays)`);
+
+  // Attempt connection to AWS RDS if configured
+  await initRdsDatabase();
 });
 
 export default app;
