@@ -64,13 +64,25 @@ export default function BhojanPage() {
   // Lock body scroll when reservation modal is open
   useEffect(() => {
     if (selectedBhojanalaya) {
+      const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
     }
-    return () => {
-      document.body.style.overflow = '';
+  }, [selectedBhojanalaya]);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedBhojanalaya) {
+        handleCloseModal();
+      }
     };
+    if (selectedBhojanalaya) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
   }, [selectedBhojanalaya]);
 
   const destinations = [
@@ -157,11 +169,11 @@ export default function BhojanPage() {
         <div className="max-w-3xl relative z-10 space-y-4">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold uppercase tracking-wider">
             <Utensils className="w-3.5 h-3.5" />
-            <span>Sacred Braj Culinary & Prasad Trail</span>
+            <span>Sacred Braj Culinary &amp; Prasad Trail</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-black font-serif tracking-tight leading-tight">
-            Divine Satvik Bhojan & Temple Mahaprasadam
+            Divine Satvik Bhojan &amp; Temple Mahaprasadam
           </h1>
 
           <p className="text-xs sm:text-base text-amber-100/90 leading-relaxed font-medium">
@@ -187,29 +199,30 @@ export default function BhojanPage() {
       </div>
 
       {/* Search and Filters Section */}
-      <div className="space-y-4 bg-white p-6 rounded-3xl border border-amber-100 shadow-sm">
+      <div className="card-temple p-6 space-y-5">
         {/* Search Bar */}
         <div className="relative">
-          <Search className="w-5 h-5 text-neutral-400 absolute left-4 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by restaurant name, dish (e.g., Mathura Peda, Bedmi Puri, Dal Baati, Kheer), or landmark..."
-            className="w-full pl-12 pr-4 py-3 text-sm bg-neutral-50 rounded-2xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-amber-500 transition"
+            className="input-temple pl-11 pr-10 py-3.5 text-xs sm:text-sm shadow-sm"
           />
+          <Search className="w-4 h-4 text-amber-600 absolute left-4 top-4" />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400 hover:text-neutral-600 font-medium"
+              className="absolute right-3.5 top-3.5 text-neutral-400 hover:text-neutral-700 p-1 cursor-pointer active:scale-90 transition"
+              title="Clear search"
             >
-              Clear
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
         {/* Destination Pills */}
-        <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center space-x-2 overflow-x-auto pb-1 no-scrollbar">
           <span className="text-xs font-black uppercase text-amber-800 tracking-wider shrink-0 mr-1 flex items-center gap-1">
             <MapPin className="w-3.5 h-3.5" /> Dham:
           </span>
@@ -217,10 +230,10 @@ export default function BhojanPage() {
             <button
               key={d.id}
               onClick={() => setSelectedDestination(d.id)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition shrink-0 cursor-pointer ${
+              className={`px-4 py-2 rounded-2xl text-xs font-bold transition shadow-sm active:scale-95 cursor-pointer shrink-0 ${
                 selectedDestination === d.id
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                  ? 'bg-amber-600 text-white shadow-md'
+                  : 'bg-white text-neutral-700 border border-neutral-200 hover:border-amber-300'
               }`}
             >
               {d.label}
@@ -229,16 +242,16 @@ export default function BhojanPage() {
         </div>
 
         {/* Category Pills & Pure Ghee Toggle */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-neutral-100">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-neutral-100">
           <div className="flex flex-wrap gap-2">
             {categories.map((c) => (
               <button
                 key={c.id}
                 onClick={() => setSelectedCategory(c.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
                   selectedCategory === c.id
-                    ? 'bg-amber-800 text-white shadow-xs'
-                    : 'bg-amber-50 text-amber-900 border border-amber-200/60 hover:bg-amber-100'
+                    ? 'bg-amber-800 text-white shadow-sm'
+                    : 'bg-amber-50/80 text-amber-900 border border-amber-200/70 hover:bg-amber-100'
                 }`}
               >
                 {c.label}
@@ -246,14 +259,14 @@ export default function BhojanPage() {
             ))}
           </div>
 
-          <label className="flex items-center space-x-2 text-xs font-bold text-amber-950 cursor-pointer select-none bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200">
+          <label className="flex items-center space-x-2 text-xs font-bold text-amber-950 cursor-pointer select-none bg-amber-50 px-3.5 py-2 rounded-xl border border-amber-200 hover:bg-amber-100/80 transition">
             <input
               type="checkbox"
               checked={pureDesiGheeOnly}
               onChange={(e) => setPureDesiGheeOnly(e.target.checked)}
               className="rounded text-amber-600 focus:ring-amber-500 h-4 w-4"
             />
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
               <Flame className="w-3.5 h-3.5 text-amber-600" />
               Pure Desi Ghee Only
             </span>
@@ -264,13 +277,13 @@ export default function BhojanPage() {
       {/* Results Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-black font-serif text-neutral-900 flex items-center gap-2">
-          <span>Curated Bhojanalayas & Prasad Halls</span>
-          <span className="text-xs font-normal px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
+          <span>Curated Bhojanalayas &amp; Prasad Halls</span>
+          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
             {filteredBhojanalayas.length} Options
           </span>
         </h2>
         <span className="text-xs text-neutral-500 hidden sm:inline">
-          All kitchens verified for 100% satvik preparation
+          All kitchens verified for 100% Vaishnava satvik preparation
         </span>
       </div>
 
@@ -281,11 +294,11 @@ export default function BhojanPage() {
           <p className="text-sm font-medium">Gathering Braj Bhojan recommendations...</p>
         </div>
       ) : filteredBhojanalayas.length === 0 ? (
-        <div className="bg-amber-50/60 rounded-3xl p-12 text-center border border-amber-200">
-          <Utensils className="w-12 h-12 text-amber-500 mx-auto mb-3" />
-          <h3 className="text-lg font-bold text-neutral-900">No Bhojanalayas Match Your Selection</h3>
-          <p className="text-sm text-neutral-600 max-w-md mx-auto mt-1 mb-4">
-            Try resetting your search query or selecting &quot;All Braj Dham&quot; to see all curated satvik dining halls.
+        <div className="card-temple p-12 text-center space-y-4">
+          <span className="text-3xl">🙏</span>
+          <h3 className="text-lg font-bold font-serif text-neutral-900">No Bhojanalayas Match Your Selection</h3>
+          <p className="text-xs sm:text-sm text-neutral-600 max-w-md mx-auto">
+            Try resetting your search keyword or selecting &quot;All Braj Dham&quot; to explore all sacred dining halls.
           </p>
           <button
             onClick={() => {
@@ -294,7 +307,7 @@ export default function BhojanPage() {
               setPureDesiGheeOnly(false);
               setSearchQuery('');
             }}
-            className="btn-gold text-xs py-2 px-4"
+            className="btn-gold text-xs py-2 px-5"
           >
             Reset All Filters
           </button>
@@ -304,118 +317,132 @@ export default function BhojanPage() {
           {filteredBhojanalayas.map((item) => (
             <div
               key={item.id}
-              className="bg-white rounded-3xl overflow-hidden border border-amber-200/80 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group"
+              className="card-temple overflow-hidden flex flex-col group"
             >
-              {/* Image banner */}
-              <div className="relative h-52 w-full overflow-hidden bg-neutral-100">
+              {/* Image banner with Badges */}
+              <div className="relative h-56 w-full overflow-hidden bg-neutral-100">
                 <Image
                   src={item.images[0] || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?q=80&w=800&auto=format&fit=crop'}
                   alt={item.name}
                   fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/25" />
 
                 {/* Top Badges */}
-                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-600 text-white shadow-sm">
+                <div className="absolute top-3.5 left-3.5 right-3.5 flex justify-between items-center z-10">
+                  <span className="bg-white/95 backdrop-blur-md text-amber-900 text-[11px] font-black px-3 py-1 rounded-full shadow-md border border-amber-100">
                     {item.categoryName}
                   </span>
-                  {item.pureDesiGhee && (
-                    <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-amber-500/90 text-amber-950 backdrop-blur-sm flex items-center gap-1 shadow-sm">
-                      <Flame className="w-3 h-3 text-amber-900" />
-                      Desi Ghee
-                    </span>
-                  )}
+                  <div className="flex items-center space-x-1.5">
+                    {item.pureDesiGhee && (
+                      <span className="bg-amber-600/95 backdrop-blur-md text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center shadow-md border border-amber-400/40">
+                        <Flame className="w-3 h-3 mr-1 text-amber-200" />
+                        Desi Ghee
+                      </span>
+                    )}
+                    {item.pureSatvik && (
+                      <span className="bg-emerald-700/95 backdrop-blur-md text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center shadow-md border border-emerald-500/40">
+                        <ShieldCheck className="w-3 h-3 mr-1 text-emerald-200" />
+                        Satvik
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-xl flex items-center space-x-1 shadow-sm">
-                  <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                  <span className="text-xs font-black text-neutral-900">{item.ratingScore}</span>
-                  <span className="text-[10px] text-neutral-500">({item.reviewsCount})</span>
-                </div>
-
-                {/* Bottom Overlay Info */}
-                <div className="absolute bottom-3 left-3 right-3 text-white">
-                  <span className="text-[11px] font-medium text-amber-200">
-                    {item.destinationName} • {item.nearestLandmark}
-                  </span>
-                  <h3 className="text-lg font-black font-serif drop-shadow-sm leading-tight">
-                    {item.name}
-                  </h3>
-                  {item.hindiName && (
-                    <p className="text-xs text-amber-100 font-serif opacity-90">
-                      {item.hindiName}
-                    </p>
-                  )}
+                {/* Distance Badge on Image bottom */}
+                <div className="absolute bottom-3.5 left-3.5 right-3.5 z-10">
+                  <div className="inline-flex items-center bg-black/80 backdrop-blur-md text-amber-300 text-xs px-3 py-1.5 rounded-xl border border-amber-400/40 shadow-md">
+                    <MapPin className="w-3.5 h-3.5 mr-1.5 text-amber-400 shrink-0" />
+                    <span className="font-bold">{item.distanceToLandmark}</span>
+                    <span className="text-white/80 font-normal ml-1">({item.walkMinutes} min walk)</span>
+                  </div>
                 </div>
               </div>
 
               {/* Card Body */}
-              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                {/* Distance & Timings */}
-                <div className="space-y-1.5 text-xs text-neutral-600 border-b border-neutral-100 pb-3">
-                  <div className="flex items-center space-x-1.5 text-amber-900 font-medium">
-                    <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>{item.distanceToLandmark} ({item.walkMinutes} min walk)</span>
-                  </div>
-                  <div className="flex items-center space-x-1.5 text-neutral-500">
-                    <Clock className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                    <span>{item.timings}</span>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <p className="text-xs text-neutral-600 line-clamp-2 leading-relaxed">
-                  {item.description}
-                </p>
-
-                {/* Speciality Dishes Tags */}
+              <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-4">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider block mb-1.5">
-                    Speciality Prasadam & Delicacies:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {item.specialityDishes.map((dish, i) => (
+                  {/* Destination & Rating */}
+                  <div className="flex items-center justify-between text-xs text-neutral-500 mb-2">
+                    <span className="uppercase tracking-widest font-black text-amber-800 text-[11px]">
+                      {item.destinationName}
+                    </span>
+                    <div className="flex items-center bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/90 text-amber-950 font-black">
+                      <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500 mr-1" />
+                      <span>{item.ratingScore}</span>
+                      <span className="text-neutral-400 font-normal ml-1 text-[11px]">({item.reviewsCount})</span>
+                    </div>
+                  </div>
+
+                  {/* Title & Hindi Name */}
+                  <h3 className="text-xl font-bold font-serif text-neutral-900 group-hover:text-amber-800 transition-colors leading-snug">
+                    {item.name}
+                  </h3>
+                  {item.hindiName && (
+                    <p className="text-xs font-serif text-amber-800/80 font-medium mt-0.5">
+                      {item.hindiName}
+                    </p>
+                  )}
+
+                  {/* Timings */}
+                  <div className="flex items-center text-xs text-neutral-500 mt-2.5 space-x-1.5">
+                    <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span className="font-medium text-neutral-700">{item.timings}</span>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-xs text-neutral-600 mt-2.5 leading-relaxed line-clamp-2">
+                    {item.description}
+                  </p>
+
+                  {/* Speciality Dishes */}
+                  <div className="mt-4 pt-3 border-t border-neutral-100">
+                    <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider block mb-2">
+                      Speciality Prasadam &amp; Delicacies:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {item.specialityDishes.map((dish, i) => (
+                        <span
+                          key={i}
+                          className="px-2.5 py-1 rounded-xl text-xs font-medium bg-amber-50 text-amber-900 border border-amber-200/80"
+                        >
+                          {dish}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Features */}
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {item.features.slice(0, 3).map((f, i) => (
                       <span
                         key={i}
-                        className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-amber-50 text-amber-900 border border-amber-200/60"
+                        className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-neutral-100 text-neutral-600"
                       >
-                        {dish}
+                        ✓ {f}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                {/* Features */}
-                <div className="flex flex-wrap gap-1.5">
-                  {item.features.slice(0, 3).map((f, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-neutral-100 text-neutral-600"
-                    >
-                      ✓ {f}
-                    </span>
-                  ))}
-                </div>
-
                 {/* Footer Pricing & CTA */}
-                <div className="pt-3 border-t border-neutral-100 flex items-center justify-between">
+                <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between">
                   <div>
                     <span className="text-[10px] uppercase font-bold text-neutral-400 block">
-                      Estimated Cost:
+                      Estimated Cost
                     </span>
-                    <span className="text-xs font-black text-amber-900">
+                    <span className="text-sm font-black text-amber-950 font-serif">
                       {item.priceRange}
                     </span>
                   </div>
 
                   <button
                     onClick={() => handleOpenReservation(item)}
-                    className="btn-gold text-xs py-2 px-3.5 rounded-xl font-bold flex items-center space-x-1 shadow-sm hover:scale-105 active:scale-95 transition cursor-pointer"
+                    className="btn-gold text-xs py-2.5 px-4 rounded-xl flex items-center space-x-1.5 shadow-sm active:scale-95 transition"
                   >
-                    <span>Pre-Book Thali</span>
+                    <span>Pre-Book Free Thali</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -440,31 +467,31 @@ export default function BhojanPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <div className="bg-white p-4 rounded-2xl border border-amber-200/80 shadow-xs space-y-2">
+          <div className="card-temple p-5 space-y-2">
             <span className="text-2xl">🍯</span>
             <h4 className="text-sm font-bold text-amber-950 font-serif">Mathura Ka Peda</h4>
             <p className="text-[11px] text-neutral-600 leading-normal">
-              Slow-roasted khoya cooked with fragrant cardamom and bura sugar. Sacred offering at Janmabhoomi & Dwarkadhish.
+              Slow-roasted khoya cooked with fragrant cardamom and bura sugar. Sacred offering at Janmabhoomi &amp; Dwarkadhish.
             </p>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-amber-200/80 shadow-xs space-y-2">
+          <div className="card-temple p-5 space-y-2">
             <span className="text-2xl">🥣</span>
             <h4 className="text-sm font-bold text-amber-950 font-serif">Makhan Mishri</h4>
             <p className="text-[11px] text-neutral-600 leading-normal">
-              Freshly churned white cow butter dusted with raw sugar crystals, loved dearly by Laddu Gopal in Gokul & Vrindavan.
+              Freshly churned white cow butter dusted with raw sugar crystals, loved dearly by Laddu Gopal in Gokul &amp; Vrindavan.
             </p>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-amber-200/80 shadow-xs space-y-2">
+          <div className="card-temple p-5 space-y-2">
             <span className="text-2xl">🥘</span>
-            <h4 className="text-sm font-bold text-amber-950 font-serif">Bedmi Puri & Dubki Aloo</h4>
+            <h4 className="text-sm font-bold text-amber-950 font-serif">Bedmi Puri &amp; Dubki Aloo</h4>
             <p className="text-[11px] text-neutral-600 leading-normal">
               Urad-dal stuffed crispy puris with tangy hing potato curry. The signature Brajwasi morning breakfast.
             </p>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-amber-200/80 shadow-xs space-y-2">
+          <div className="card-temple p-5 space-y-2">
             <span className="text-2xl">🥛</span>
             <h4 className="text-sm font-bold text-amber-950 font-serif">Kadhai Malai Milk</h4>
             <p className="text-[11px] text-neutral-600 leading-normal">
@@ -472,7 +499,7 @@ export default function BhojanPage() {
             </p>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-amber-200/80 shadow-xs space-y-2">
+          <div className="card-temple p-5 space-y-2">
             <span className="text-2xl">🍱</span>
             <h4 className="text-sm font-bold text-amber-950 font-serif">Chhapan Bhog Thali</h4>
             <p className="text-[11px] text-neutral-600 leading-normal">
@@ -483,8 +510,8 @@ export default function BhojanPage() {
       </div>
 
       {/* Pilgrim Guidelines & FAQ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-8 rounded-3xl border border-neutral-200">
-        <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="card-temple p-6 sm:p-8 space-y-3">
           <div className="flex items-center space-x-2 text-amber-900 font-serif font-black text-lg">
             <ShieldCheck className="w-5 h-5 text-amber-600" />
             <h3>Brijnidhi Satvik Guarantee</h3>
@@ -500,7 +527,7 @@ export default function BhojanPage() {
           </ul>
         </div>
 
-        <div className="space-y-3">
+        <div className="card-temple p-6 sm:p-8 space-y-3">
           <div className="flex items-center space-x-2 text-amber-900 font-serif font-black text-lg">
             <Heart className="w-5 h-5 text-rose-600" />
             <h3>Annakshetra Devotee Seva</h3>
@@ -508,7 +535,7 @@ export default function BhojanPage() {
           <p className="text-xs text-neutral-600 leading-relaxed">
             If you wish to sponsor a day of pure satvik mahaprasadam for walking pilgrims or local Brajwasi sadhus along the Govardhan or Vrindavan parikrama, you can request an Annakshetra Seva token.
           </p>
-          <div className="pt-1">
+          <div className="pt-2">
             <a
               href="tel:+919876511003"
               className="inline-flex items-center space-x-1.5 text-xs font-bold text-amber-700 hover:text-amber-800"
@@ -522,8 +549,14 @@ export default function BhojanPage() {
 
       {/* Reservation & Prasad Token Modal (Rendered with React Portal) */}
       {mounted && selectedBhojanalaya && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-amber-300 relative animate-scale-up">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleCloseModal();
+          }}
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in"
+          style={{ top: 0, left: 0, width: '100vw', height: '100vh', margin: 0 }}
+        >
+          <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto bg-white rounded-3xl shadow-2xl border-2 border-amber-300/80 animate-scale-up">
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-amber-950 via-orange-950 to-amber-900 text-white p-6 relative">
               <button
@@ -546,9 +579,9 @@ export default function BhojanPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 max-h-[75vh] overflow-y-auto">
+            <div className="p-6">
               {reservationSuccess ? (
-                <div className="text-center py-6 space-y-4">
+                <div className="text-center py-4 space-y-4">
                   <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
                     <CheckCircle className="w-10 h-10" />
                   </div>
@@ -566,7 +599,7 @@ export default function BhojanPage() {
                     </p>
                     <div className="border-t border-amber-200/60 pt-2 space-y-1 text-[11px] text-neutral-600">
                       <div><strong>Devotee:</strong> {guestName} ({guestPhone})</div>
-                      <div><strong>Date & Slot:</strong> {reservationDate} ({mealSlot.toUpperCase()})</div>
+                      <div><strong>Date &amp; Slot:</strong> {reservationDate} ({mealSlot.toUpperCase()})</div>
                       <div><strong>Thalis / Persons:</strong> {thaliCount}</div>
                       <div><strong>Location:</strong> {selectedBhojanalaya.address}</div>
                     </div>
@@ -598,7 +631,7 @@ export default function BhojanPage() {
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
                       placeholder="e.g. Ramesh Kumar"
-                      className="w-full px-3.5 py-2 text-xs bg-neutral-50 rounded-xl border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="input-temple text-xs"
                     />
                   </div>
 
@@ -611,7 +644,7 @@ export default function BhojanPage() {
                         value={guestPhone}
                         onChange={(e) => setGuestPhone(e.target.value)}
                         placeholder="e.g. 9876543210"
-                        className="w-full px-3.5 py-2 text-xs bg-neutral-50 rounded-xl border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        className="input-temple text-xs"
                       />
                     </div>
 
@@ -621,7 +654,7 @@ export default function BhojanPage() {
                         type="date"
                         value={reservationDate}
                         onChange={(e) => setReservationDate(e.target.value)}
-                        className="w-full px-3.5 py-2 text-xs bg-neutral-50 rounded-xl border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        className="input-temple text-xs"
                       />
                     </div>
                   </div>
@@ -632,7 +665,7 @@ export default function BhojanPage() {
                       <select
                         value={mealSlot}
                         onChange={(e) => setMealSlot(e.target.value as 'lunch' | 'dinner' | 'breakfast')}
-                        className="w-full px-3.5 py-2 text-xs bg-neutral-50 rounded-xl border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        className="select-temple w-full text-xs"
                       >
                         <option value="lunch">Lunch (11:30 AM - 03:00 PM)</option>
                         <option value="dinner">Dinner (07:00 PM - 10:30 PM)</option>
@@ -646,15 +679,15 @@ export default function BhojanPage() {
                         <button
                           type="button"
                           onClick={() => setThaliCount(Math.max(1, thaliCount - 1))}
-                          className="w-8 h-8 rounded-lg bg-neutral-200 text-neutral-800 font-bold hover:bg-neutral-300 cursor-pointer"
+                          className="w-9 h-9 rounded-xl bg-amber-100 text-amber-950 font-black hover:bg-amber-200 cursor-pointer transition active:scale-90"
                         >
                           -
                         </button>
-                        <span className="w-10 text-center font-bold text-sm">{thaliCount}</span>
+                        <span className="w-10 text-center font-bold text-sm text-neutral-900">{thaliCount}</span>
                         <button
                           type="button"
                           onClick={() => setThaliCount(Math.min(20, thaliCount + 1))}
-                          className="w-8 h-8 rounded-lg bg-neutral-200 text-neutral-800 font-bold hover:bg-neutral-300 cursor-pointer"
+                          className="w-9 h-9 rounded-xl bg-amber-100 text-amber-950 font-black hover:bg-amber-200 cursor-pointer transition active:scale-90"
                         >
                           +
                         </button>
@@ -669,15 +702,15 @@ export default function BhojanPage() {
                       value={specialRequest}
                       onChange={(e) => setSpecialRequest(e.target.value)}
                       placeholder="e.g. Traveling with elderly, need floor seating / low spice, fast (vrat) food..."
-                      className="w-full px-3.5 py-2 text-xs bg-neutral-50 rounded-xl border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="input-temple text-xs resize-none"
                     />
                   </div>
 
-                  <div className="pt-2 flex items-center justify-end space-x-3 border-t border-neutral-100">
+                  <div className="pt-3 flex items-center justify-end space-x-3 border-t border-neutral-100">
                     <button
                       type="button"
                       onClick={handleCloseModal}
-                      className="text-xs font-bold text-neutral-600 hover:text-neutral-800 px-4 py-2"
+                      className="text-xs font-bold text-neutral-600 hover:text-neutral-800 px-4 py-2 cursor-pointer"
                     >
                       Cancel
                     </button>

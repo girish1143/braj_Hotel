@@ -125,16 +125,16 @@ export default function Navbar() {
             </Link>
 
             {/* Desktop Navigation Links */}
-            <nav className="hidden md:flex items-center space-x-1">
+            <nav className="hidden lg:flex items-center space-x-1">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
                 return (
                   <Link
                     key={link.name}
                     href={link.href}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    className={`px-3 xl:px-4 py-2 rounded-xl text-xs xl:text-sm font-semibold transition-colors ${
                       isActive
-                        ? 'text-amber-700 bg-amber-50/80'
+                        ? 'text-amber-700 bg-amber-50/80 font-bold'
                         : 'text-neutral-700 hover:text-amber-700 hover:bg-neutral-50'
                     }`}
                   >
@@ -145,7 +145,7 @@ export default function Navbar() {
             </nav>
 
             {/* Right Action Buttons */}
-            <div className="hidden md:flex items-center space-x-3">
+            <div className="hidden lg:flex items-center space-x-3">
               {!isLoggedIn && (
                 <Link
                   href="/list-property"
@@ -175,7 +175,7 @@ export default function Navbar() {
               ) : (
                 <button
                   onClick={() => setShowLoginModal(true)}
-                  className="flex items-center text-xs font-bold text-amber-900 hover:text-amber-700 bg-white hover:bg-amber-50 border border-amber-300 px-3.5 py-2 rounded-xl shadow-xs transition-colors cursor-pointer"
+                  className="flex items-center text-xs font-bold text-amber-900 hover:text-amber-700 bg-white hover:bg-amber-50 border border-amber-300 px-3.5 py-2 rounded-xl shadow-sm transition-colors cursor-pointer"
                 >
                   <User className="w-3.5 h-3.5 mr-1.5 text-amber-600" />
                   <span>Sign In</span>
@@ -184,17 +184,17 @@ export default function Navbar() {
 
               <Link
                 href="/stays"
-                className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow-sm hover:shadow transition-all"
+                className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold text-xs xl:text-sm px-4 xl:px-5 py-2.5 rounded-xl shadow-sm hover:shadow transition-all"
               >
                 Book A Stay
               </Link>
             </div>
 
             {/* Mobile Hamburger Button */}
-            <div className="flex md:hidden items-center space-x-2">
+            <div className="flex lg:hidden items-center space-x-2">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-lg text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
+                className="p-2 rounded-lg text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 cursor-pointer"
                 aria-label="Toggle menu"
               >
                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -205,7 +205,7 @@ export default function Navbar() {
 
         {/* Mobile Dropdown */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-amber-100 bg-white px-4 pt-3 pb-6 space-y-2">
+          <div className="lg:hidden border-t border-amber-100 bg-white px-4 pt-3 pb-6 space-y-2">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
