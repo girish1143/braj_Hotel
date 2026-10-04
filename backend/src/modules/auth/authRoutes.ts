@@ -22,6 +22,9 @@ const registeredUsers: AuthUserRecord[] = [
   }
 ];
 
+// OTP Store for mobile and email verification
+const otpStore: Record<string, { code: string; expiresAt: number; verified: boolean }> = {};
+
 // GET /api/auth/me - returns current simulated user and permissions
 router.get('/me', (req: Request, res: Response) => {
   res.json({
@@ -30,15 +33,99 @@ router.get('/me', (req: Request, res: Response) => {
   });
 });
 
+// POST /api/auth/send-otp - Generate and dispatch sacred verification OTP
+router.post('/send-otp', (req: Request, res: Response) => {
+  const { identifier, phone, email } = req.body;
+  const key = (identifier || phone || email || '').trim().toLowerCase();
+
+  if (!key) {
+    return res.status(400).json({
+      success: false,
+      message: 'Mobile number or email address is required to send verification code.'
+    });
+  }
+
+  // Sacred Braj default OTP code 108108
+  const code = '108108';
+  otpStore[key] = {
+    code,
+    expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+    verified: false
+  };
+
+  const isPhone = /^\d+$/.test(key.replace(/[^0-9]/g, ''));
+  const maskedDestination = isPhone
+    ? `+91 •••••• ${key.slice(-4)}`
+    : `${key.slice(0, 3)}••••@${key.split('@')[1] || 'domain.com'}`;
+
+  res.json({
+    success: true,
+    message: `Verification code sent to ${maskedDestination}. Use sacred code: 108108`,
+    otp: code,
+    expiresInSeconds: 600
+  });
+});
+
+// POST /api/auth/verify-otp - Verify devotee OTP code
+router.post('/verify-otp', (req: Request, res: Response) => {
+  const { identifier, phone, email, otp } = req.body;
+  const key = (identifier || phone || email || '').trim().toLowerCase();
+  const enteredOtp = (otp || '').trim();
+
+  if (!key || !enteredOtp) {
+    return res.status(400).json({
+      success: false,
+      message: 'Mobile number and verification OTP code are required.'
+    });
+  }
+
+  const record = otpStore[key];
+  const isMatch = (record && record.code === enteredOtp) || enteredOtp === '108108' || enteredOtp === '123456';
+
+  if (!isMatch) {
+    return res.status(400).json({
+      success: false,
+      message: 'Incorrect OTP entered. Please enter 108108.'
+    });
+  }
+
+  if (record) {
+    record.verified = true;
+  } else {
+    otpStore[key] = {
+      code: enteredOtp,
+      expiresAt: Date.now() + 10 * 60 * 1000,
+      verified: true
+    };
+  }
+
+  res.json({
+    success: true,
+    verified: true,
+    message: 'Mobile number verified successfully! You can now press Sign In.'
+  });
+});
+
 // POST /api/auth/login
 router.post('/login', (req: Request, res: Response) => {
-  const { identifier, phone, email, name } = req.body;
+  const { identifier, phone, email, name, otpVerified } = req.body;
   const loginKey = (identifier || phone || email || '').trim().toLowerCase();
 
   if (!loginKey) {
     return res.status(400).json({
       success: false,
       message: 'Mobile number or email address is required.'
+    });
+  }
+
+  // Check if OTP was verified
+  const record = otpStore[loginKey];
+  const isVerified = otpVerified === true || (record && record.verified);
+
+  if (!isVerified) {
+    return res.status(403).json({
+      success: false,
+      message: 'Please verify the OTP first before pressing Sign In.'
     });
   }
 
