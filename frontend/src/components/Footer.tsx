@@ -117,8 +117,14 @@ export default function Footer() {
                   Temple Aarti Timings & Darshan Pass
                 </Link>
               </li>
+              <li>
+                <Link href="/bhojan" className="hover:text-amber-400 transition-colors text-amber-300 font-semibold">
+                  Satvik Bhojan & Mahaprasadam Halls
+                </Link>
+              </li>
             </ul>
           </div>
+
 
           {/* Helpline & Contact */}
           <div>
@@ -152,9 +158,11 @@ export default function Footer() {
           <div className="flex space-x-6">
             <Link href="/stays" className="hover:text-neutral-400">All Stays</Link>
             <Link href="/destinations" className="hover:text-neutral-400">Destinations</Link>
+            <Link href="/bhojan" className="hover:text-neutral-400">Bhojan & Prasad</Link>
             <Link href="/experiences" className="hover:text-neutral-400">Experiences</Link>
             <Link href="/offers" className="hover:text-neutral-400">Yatra Offers</Link>
           </div>
+
         </div>
       </div>
     </footer>

@@ -5,6 +5,7 @@ import destinationRoutes from './routes/destinationRoutes';
 import hotelRoutes from './routes/hotelRoutes';
 import experienceRoutes from './routes/experienceRoutes';
 import bookingRoutes from './routes/bookingRoutes';
+import bhojanRoutes from './routes/bhojanRoutes';
 import systemAdminRoutes from './modules/system-admin/systemAdminRoutes';
 import hotelAdminRoutes from './modules/hotel-admin/hotelAdminRoutes';
 import onboardRoutes from './modules/hotels/onboardRoutes';
@@ -27,6 +28,7 @@ app.use('/api/destinations', destinationRoutes);
 app.use('/api/hotels', hotelRoutes);
 app.use('/api/experiences', experienceRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/bhojan', bhojanRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/hotels/onboard', onboardRoutes);
 

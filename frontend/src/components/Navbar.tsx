@@ -70,6 +70,7 @@ export default function Navbar() {
   const navLinks = [
     { name: 'Stays', href: '/stays' },
     { name: 'Destinations', href: '/destinations' },
+    { name: 'Bhojan & Prasadam', href: '/bhojan' },
     { name: 'Experiences & Darshan', href: '/experiences' },
     { name: 'Offers', href: '/offers' },
   ];

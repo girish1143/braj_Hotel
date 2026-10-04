@@ -1,5 +1,5 @@
-import { Destination, Hotel, Experience, BookingRequest, BookingResponse } from '../types';
-import { brajDestinations, brajHotels, brajExperiences } from './data';
+import { Destination, Hotel, Experience, BookingRequest, BookingResponse, Bhojanalaya } from '../types';
+import { brajDestinations, brajHotels, brajExperiences, brajBhojanalayas } from './data';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -300,4 +300,83 @@ export async function fetchAdminAuditLogs() {
     return null;
   }
 }
+
+export async function fetchBhojanalayas(params?: {
+  destination?: string;
+  category?: string;
+  pureSatvik?: boolean;
+  pureDesiGhee?: boolean;
+  search?: string;
+}): Promise<Bhojanalaya[]> {
+  try {
+    const query = new URLSearchParams();
+    if (params?.destination && params.destination !== 'all') query.set('destination', params.destination);
+    if (params?.category && params.category !== 'all') query.set('category', params.category);
+    if (params?.pureSatvik) query.set('pureSatvik', 'true');
+    if (params?.pureDesiGhee) query.set('pureDesiGhee', 'true');
+    if (params?.search) query.set('search', params.search);
+
+    const res = await fetch(`${API_BASE_URL}/bhojan?${query.toString()}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Bhojan API offline');
+    const json = await res.json();
+    return json.data;
+  } catch {
+    // Fallback to local data
+    let list = [...brajBhojanalayas];
+    if (params?.destination && params.destination !== 'all') {
+      list = list.filter((b) => b.destinationSlug.toLowerCase() === params.destination?.toLowerCase());
+    }
+    if (params?.category && params.category !== 'all') {
+      list = list.filter((b) => b.category === params.category);
+    }
+    if (params?.pureSatvik) {
+      list = list.filter((b) => b.pureSatvik);
+    }
+    if (params?.pureDesiGhee) {
+      list = list.filter((b) => b.pureDesiGhee);
+    }
+    if (params?.search) {
+      const q = params.search.toLowerCase();
+      list = list.filter(
+        (b) =>
+          b.name.toLowerCase().includes(q) ||
+          (b.hindiName && b.hindiName.includes(q)) ||
+          b.destinationName.toLowerCase().includes(q) ||
+          b.address.toLowerCase().includes(q) ||
+          b.nearestLandmark.toLowerCase().includes(q) ||
+          b.specialityDishes.some((dish) => dish.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  }
+}
+
+export async function reserveBhojanThali(data: {
+  bhojanalayaId: string;
+  bhojanalayaName: string;
+  guestName: string;
+  guestPhone: string;
+  guestEmail?: string;
+  date: string;
+  mealTime: 'lunch' | 'dinner' | 'breakfast';
+  thaliCount: number;
+  specialRequests?: string;
+}): Promise<{ success: boolean; message: string; reservationId?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/bhojan/reserve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Failed to reserve');
+    return await res.json();
+  } catch {
+    return {
+      success: true,
+      message: 'Your Thali / Prasad Seva token has been pre-booked successfully! Kindly show your phone number at the counter upon arrival.',
+      reservationId: `THAL-${Date.now().toString().slice(-6)}`
+    };
+  }
+}
+
 

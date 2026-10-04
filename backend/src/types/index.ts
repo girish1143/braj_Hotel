@@ -121,3 +121,34 @@ export interface BookingResponse extends BookingRequest {
   status: 'CONFIRMED' | 'PENDING';
   createdAt: string;
 }
+
+export type BhojanCategory = 'thali' | 'temple_prasadam' | 'sweets_dairy' | 'heritage_cafe' | 'annakshetra';
+
+export interface Bhojanalaya {
+  id: string;
+  name: string;
+  hindiName?: string;
+  slug: string;
+  destinationSlug: 'mathura' | 'vrindavan' | 'barsana' | 'govardhan';
+  destinationName: string;
+  category: BhojanCategory;
+  categoryName: string;
+  ratingScore: number;
+  reviewsCount: number;
+  priceRange: string;
+  avgCostForTwo: number;
+  address: string;
+  nearestLandmark: string;
+  distanceToLandmark: string;
+  walkMinutes: number;
+  timings: string;
+  pureSatvik: boolean;
+  pureDesiGhee: boolean;
+  specialityDishes: string[];
+  images: string[];
+  description: string;
+  features: string[];
+  contactPhone?: string;
+  isFeatured?: boolean;
+}
+
