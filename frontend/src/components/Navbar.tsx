@@ -214,20 +214,6 @@ export default function Navbar() {
                   🏨 List Your Property
                 </Link>
               )}
-              <Link
-                href="/hotel-admin"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 text-neutral-700 font-medium"
-              >
-                🔑 Hotel Admin Portal (/hotel-admin)
-              </Link>
-              <Link
-                href="/admin"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 text-neutral-700 font-medium"
-              >
-                🛡️ System Admin Portal (/admin)
-              </Link>
               {isLoggedIn ? (
                 <>
                   <Link
