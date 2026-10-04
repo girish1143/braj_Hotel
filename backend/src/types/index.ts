@@ -149,6 +149,57 @@ export interface Bhojanalaya {
   description: string;
   features: string[];
   contactPhone?: string;
+  ownerName?: string;
+  ownerEmail?: string;
+  fssaiLicenseNo?: string;
+  status?: 'SUBMITTED' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
   isFeatured?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
+
+export interface BhojanMenuItem {
+  id: string;
+  bhojanalayaId: string;
+  name: string;
+  hindiName?: string;
+  category: 'Thali' | 'Prasadam' | 'Sweets' | 'Dairy' | 'Snacks' | 'Beverages';
+  price: number;
+  description?: string;
+  pureDesiGhee: boolean;
+  isSpeciality: boolean;
+  isAvailable: boolean;
+  imageUrl?: string;
+}
+
+export interface BhojanReservation {
+  id: string;
+  reservationReference: string;
+  bhojanalayaId: string;
+  bhojanalayaName: string;
+  guestName: string;
+  guestPhone: string;
+  guestEmail?: string;
+  date: string;
+  mealTime: 'breakfast' | 'lunch' | 'dinner';
+  thaliCount: number;
+  specialRequests?: string;
+  status: 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+  tokenNumber: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface BhojanReview {
+  id: string;
+  bhojanalayaId: string;
+  authorName: string;
+  authorCity?: string;
+  rating: number;
+  title?: string;
+  comment: string;
+  darshanExperience?: string;
+  createdAt: string;
+}
+
 
