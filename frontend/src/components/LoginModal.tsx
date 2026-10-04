@@ -1,17 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import {
   Phone,
   Mail,
   User,
-  ShieldCheck,
   Sparkles,
   ArrowRight,
   CheckCircle2,
   Lock,
-  Building2,
   X
 } from 'lucide-react';
 
@@ -502,26 +499,6 @@ export default function LoginModal({
               </button>
             </form>
           )}
-
-          {/* Quick Partner Links */}
-          <div className="pt-3 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-500">
-            <Link
-              href="/hotel-admin"
-              onClick={onClose}
-              className="hover:text-amber-800 flex items-center space-x-1"
-            >
-              <Building2 className="w-3.5 h-3.5 text-amber-600" />
-              <span>Hotel Admin Login</span>
-            </Link>
-            <Link
-              href="/admin"
-              onClick={onClose}
-              className="hover:text-purple-800 flex items-center space-x-1"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
-              <span>System Admin</span>
-            </Link>
-          </div>
         </div>
       </div>
     </div>
