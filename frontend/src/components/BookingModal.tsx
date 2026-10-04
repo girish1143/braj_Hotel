@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Hotel, RoomOption, BookingResponse } from '../types';
 import { createBooking } from '../lib/api';
 import { Check, Calendar, Users, ShieldCheck, Sparkles, X, Phone, User, Mail } from 'lucide-react';
@@ -11,6 +12,12 @@ interface BookingModalProps {
 }
 
 export default function BookingModal({ hotel, onClose }: BookingModalProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Lock background body scroll while booking modal is open
   useEffect(() => {
     if (hotel) {
@@ -22,7 +29,20 @@ export default function BookingModal({ hotel, onClose }: BookingModalProps) {
     }
   }, [hotel]);
 
-  if (!hotel) return null;
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && hotel) {
+        onClose();
+      }
+    };
+    if (hotel) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [hotel, onClose]);
+
+  if (!hotel || !mounted) return null;
 
   const [selectedRoom, setSelectedRoom] = useState<RoomOption>(hotel.rooms[0]);
   const [checkInDate, setCheckInDate] = useState('2026-10-10');
@@ -127,8 +147,14 @@ export default function BookingModal({ hotel, onClose }: BookingModalProps) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+  return createPortal(
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto"
+      style={{ top: 0, left: 0, width: '100vw', height: '100vh', margin: 0 }}
+    >
       <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative my-8 border border-amber-200">
         <button
           onClick={onClose}
@@ -388,6 +414,7 @@ export default function BookingModal({ hotel, onClose }: BookingModalProps) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

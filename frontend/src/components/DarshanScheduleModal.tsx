@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Clock, MapPin, Sparkles } from 'lucide-react';
 
 interface DarshanScheduleModalProps {
@@ -9,6 +10,12 @@ interface DarshanScheduleModalProps {
 }
 
 export default function DarshanScheduleModal({ isOpen, onClose }: DarshanScheduleModalProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Lock background body scroll when darshan schedule modal is open
   useEffect(() => {
     if (isOpen) {
@@ -20,7 +27,20 @@ export default function DarshanScheduleModal({ isOpen, onClose }: DarshanSchedul
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !mounted) return null;
 
   const schedules = [
     {
@@ -65,8 +85,14 @@ export default function DarshanScheduleModal({ isOpen, onClose }: DarshanSchedul
     }
   ];
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+  return createPortal(
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto"
+      style={{ top: 0, left: 0, width: '100vw', height: '100vh', margin: 0 }}
+    >
       <div className="bg-white rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl relative my-8 border border-amber-200">
         <button
           onClick={onClose}
@@ -119,6 +145,7 @@ export default function DarshanScheduleModal({ isOpen, onClose }: DarshanSchedul
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

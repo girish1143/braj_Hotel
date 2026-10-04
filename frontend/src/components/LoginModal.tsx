@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Phone,
   Mail,
@@ -25,8 +26,13 @@ export default function LoginModal({
   onLoginSuccess,
   canClose = true
 }: LoginModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState<'login' | 'register'>('login');
   const [loginMethod, setLoginMethod] = useState<'phone' | 'email'>('phone');
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Lock background body scroll when modal is open
   useEffect(() => {
@@ -38,6 +44,19 @@ export default function LoginModal({
       };
     }
   }, [isOpen]);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && canClose && onClose) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, canClose, onClose]);
 
   // Login form state
   const [phone, setPhone] = useState('');
@@ -55,7 +74,7 @@ export default function LoginModal({
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const handleSendOtp = (e: React.FormEvent) => {
     e.preventDefault();
@@ -234,8 +253,16 @@ export default function LoginModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
+  return createPortal(
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget && canClose && onClose) {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200"
+      style={{ top: 0, left: 0, width: '100vw', height: '100vh', margin: 0 }}
+    >
       <div className="relative w-full max-w-md max-h-[92vh] overflow-y-auto bg-white rounded-3xl shadow-2xl border-2 border-amber-300/80 transform transition-all">
         {/* Decorative Top Accent Bar */}
         <div className="h-2 bg-gradient-to-r from-amber-600 via-orange-500 to-amber-700" />
@@ -512,6 +539,7 @@ export default function LoginModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
