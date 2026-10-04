@@ -247,6 +247,30 @@ export default function CustomerAccountPage() {
     }
   }, []);
 
+  // Lock background body scroll when any modal or drawer is open
+  useEffect(() => {
+    const isAnyModalOpen = Boolean(
+      selectedBookingForDetails ||
+      selectedInvoice ||
+      cancelModalBooking ||
+      writeReviewModalBooking ||
+      showAddGuestModal
+    );
+    if (isAnyModalOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [
+    selectedBookingForDetails,
+    selectedInvoice,
+    cancelModalBooking,
+    writeReviewModalBooking,
+    showAddGuestModal
+  ]);
+
   // Calculate Profile Completion %
   const calculateProfileCompletion = () => {
     let score = 0;

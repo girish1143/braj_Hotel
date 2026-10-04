@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Phone,
   Mail,
@@ -27,6 +27,17 @@ export default function LoginModal({
 }: LoginModalProps) {
   const [tab, setTab] = useState<'login' | 'register'>('login');
   const [loginMethod, setLoginMethod] = useState<'phone' | 'email'>('phone');
+
+  // Lock background body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
 
   // Login form state
   const [phone, setPhone] = useState('');
@@ -225,7 +236,7 @@ export default function LoginModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border-2 border-amber-300/80 overflow-hidden transform transition-all">
+      <div className="relative w-full max-w-md max-h-[92vh] overflow-y-auto bg-white rounded-3xl shadow-2xl border-2 border-amber-300/80 transform transition-all">
         {/* Decorative Top Accent Bar */}
         <div className="h-2 bg-gradient-to-r from-amber-600 via-orange-500 to-amber-700" />
 

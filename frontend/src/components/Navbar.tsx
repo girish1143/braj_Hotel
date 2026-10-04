@@ -47,6 +47,17 @@ export default function Navbar() {
     return () => window.removeEventListener('brijnidhi_auth_change', checkAuth);
   }, []);
 
+  // Lock background scroll when mobile drawer is open
+  React.useEffect(() => {
+    if (mobileMenuOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [mobileMenuOpen]);
+
   const handleLogout = () => {
     localStorage.removeItem('brijnidhi_logged_in');
     localStorage.removeItem('brijnidhi_current_user');

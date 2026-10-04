@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Hotel, RoomOption, BookingResponse } from '../types';
 import { createBooking } from '../lib/api';
 import { Check, Calendar, Users, ShieldCheck, Sparkles, X, Phone, User, Mail } from 'lucide-react';
@@ -11,6 +11,17 @@ interface BookingModalProps {
 }
 
 export default function BookingModal({ hotel, onClose }: BookingModalProps) {
+  // Lock background body scroll while booking modal is open
+  useEffect(() => {
+    if (hotel) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [hotel]);
+
   if (!hotel) return null;
 
   const [selectedRoom, setSelectedRoom] = useState<RoomOption>(hotel.rooms[0]);

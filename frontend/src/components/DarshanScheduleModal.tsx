@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, Clock, MapPin, Sparkles } from 'lucide-react';
 
 interface DarshanScheduleModalProps {
@@ -9,6 +9,17 @@ interface DarshanScheduleModalProps {
 }
 
 export default function DarshanScheduleModal({ isOpen, onClose }: DarshanScheduleModalProps) {
+  // Lock background body scroll when darshan schedule modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const schedules = [
