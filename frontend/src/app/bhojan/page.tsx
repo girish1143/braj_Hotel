@@ -291,11 +291,35 @@ export default function BhojanPage() {
       {loading ? (
         <div className="text-center py-20 text-neutral-500">
           <div className="animate-spin w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full mx-auto mb-3" />
-          <p className="text-sm font-medium">Gathering Braj Bhojan recommendations...</p>
+          <p className="text-sm font-medium">Loading Braj Bhojanalayas...</p>
+        </div>
+      ) : bhojanalayas.length === 0 ? (
+        <div className="card-temple p-12 text-center space-y-4 max-w-2xl mx-auto">
+          <span className="text-4xl">🙏</span>
+          <h3 className="text-xl font-bold font-serif text-neutral-900">
+            No Bhojanalayas Listed Yet
+          </h3>
+          <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+            All dummy and test data has been cleared. We are onboarding verified pure satvik bhojanalayas, temple annakshetras, and traditional sweet halls across Mathura, Vrindavan, Barsana, and Govardhan.
+          </p>
+          <div className="pt-2 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/list-property"
+              className="btn-gold text-xs py-2.5 px-5 rounded-xl font-bold"
+            >
+              List Your Bhojanalaya / Restaurant
+            </Link>
+            <Link
+              href="/stays"
+              className="btn-secondary text-xs py-2.5 px-5 rounded-xl font-bold"
+            >
+              Explore Braj Stays
+            </Link>
+          </div>
         </div>
       ) : filteredBhojanalayas.length === 0 ? (
         <div className="card-temple p-12 text-center space-y-4">
-          <span className="text-3xl">🙏</span>
+          <span className="text-3xl">🔍</span>
           <h3 className="text-lg font-bold font-serif text-neutral-900">No Bhojanalayas Match Your Selection</h3>
           <p className="text-xs sm:text-sm text-neutral-600 max-w-md mx-auto">
             Try resetting your search keyword or selecting &quot;All Braj Dham&quot; to explore all sacred dining halls.
@@ -537,12 +561,13 @@ export default function BhojanPage() {
           </p>
           <div className="pt-2">
             <a
-              href="tel:+919876511003"
+              href="tel:+919876543210"
               className="inline-flex items-center space-x-1.5 text-xs font-bold text-amber-700 hover:text-amber-800"
             >
               <Phone className="w-3.5 h-3.5" />
-              <span>Contact Brijnidhi Prasad Seva Helpline: +91 98765 11003</span>
+              <span>Contact Brijnidhi Prasad Seva Helpline: +91 98765 43210</span>
             </a>
+
           </div>
         </div>
       </div>
