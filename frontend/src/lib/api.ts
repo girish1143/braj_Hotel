@@ -2,6 +2,7 @@ import { Destination, Hotel, Experience, BookingRequest, BookingResponse, Bhojan
 import { brajDestinations, brajHotels, brajExperiences, brajBhojanalayas } from './data';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+export const ADMIN_API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || 'http://localhost:5001/api/admin';
 
 export async function fetchDestinations(): Promise<Destination[]> {
   try {
@@ -190,7 +191,7 @@ function getAdminHeaders(): HeadersInit {
 
 export async function fetchAdminOverview() {
   try {
-    const res = await fetch(`${API_BASE_URL}/admin/overview`, {
+    const res = await fetch(`${ADMIN_API_BASE_URL}/overview`, {
       cache: 'no-store',
       headers: getAdminHeaders()
     });
@@ -204,7 +205,7 @@ export async function fetchAdminOverview() {
 
 export async function fetchAdminHotels() {
   try {
-    const res = await fetch(`${API_BASE_URL}/admin/hotels`, {
+    const res = await fetch(`${ADMIN_API_BASE_URL}/hotels`, {
       cache: 'no-store',
       headers: getAdminHeaders()
     });
@@ -217,7 +218,7 @@ export async function fetchAdminHotels() {
 }
 
 export async function createAdminHotel(data: any) {
-  const res = await fetch(`${API_BASE_URL}/admin/hotels`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/hotels`, {
     method: 'POST',
     headers: getAdminHeaders(),
     body: JSON.stringify(data),
@@ -227,7 +228,7 @@ export async function createAdminHotel(data: any) {
 }
 
 export async function updateAdminHotel(id: string, data: any) {
-  const res = await fetch(`${API_BASE_URL}/admin/hotels/${id}`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/hotels/${id}`, {
     method: 'PUT',
     headers: getAdminHeaders(),
     body: JSON.stringify(data),
@@ -237,7 +238,7 @@ export async function updateAdminHotel(id: string, data: any) {
 }
 
 export async function deleteAdminHotel(id: string) {
-  const res = await fetch(`${API_BASE_URL}/admin/hotels/${id}`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/hotels/${id}`, {
     method: 'DELETE',
     headers: getAdminHeaders(),
   });
@@ -246,7 +247,7 @@ export async function deleteAdminHotel(id: string) {
 }
 
 export async function approveAdminHotel(id: string) {
-  const res = await fetch(`${API_BASE_URL}/admin/hotels/${id}/approve`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/hotels/${id}/approve`, {
     method: 'PATCH',
     headers: getAdminHeaders(),
   });
@@ -255,7 +256,7 @@ export async function approveAdminHotel(id: string) {
 }
 
 export async function rejectAdminHotel(id: string, reason?: string) {
-  const res = await fetch(`${API_BASE_URL}/admin/hotels/${id}/reject`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/hotels/${id}/reject`, {
     method: 'PATCH',
     headers: getAdminHeaders(),
     body: JSON.stringify({ reason }),
@@ -265,7 +266,7 @@ export async function rejectAdminHotel(id: string, reason?: string) {
 }
 
 export async function toggleSuspendAdminHotel(id: string) {
-  const res = await fetch(`${API_BASE_URL}/admin/hotels/${id}/suspend`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/hotels/${id}/suspend`, {
     method: 'PATCH',
     headers: getAdminHeaders(),
   });
@@ -275,7 +276,7 @@ export async function toggleSuspendAdminHotel(id: string) {
 
 export async function fetchAdminUsers() {
   try {
-    const res = await fetch(`${API_BASE_URL}/admin/users`, {
+    const res = await fetch(`${ADMIN_API_BASE_URL}/users`, {
       cache: 'no-store',
       headers: getAdminHeaders()
     });
@@ -289,7 +290,7 @@ export async function fetchAdminUsers() {
 
 export async function fetchAdminAuditLogs() {
   try {
-    const res = await fetch(`${API_BASE_URL}/admin/audit-logs`, {
+    const res = await fetch(`${ADMIN_API_BASE_URL}/audit-logs`, {
       cache: 'no-store',
       headers: getAdminHeaders()
     });
@@ -385,7 +386,7 @@ export async function reserveBhojanThali(data: {
 
 export async function fetchAdminBhojanalayas() {
   try {
-    const res = await fetch(`${API_BASE_URL}/admin/bhojan`, {
+    const res = await fetch(`${ADMIN_API_BASE_URL}/bhojan`, {
       cache: 'no-store',
       headers: getAdminHeaders()
     });
@@ -398,7 +399,7 @@ export async function fetchAdminBhojanalayas() {
 }
 
 export async function createAdminBhojan(data: any) {
-  const res = await fetch(`${API_BASE_URL}/admin/bhojan`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/bhojan`, {
     method: 'POST',
     headers: getAdminHeaders(),
     body: JSON.stringify(data)
@@ -408,7 +409,7 @@ export async function createAdminBhojan(data: any) {
 }
 
 export async function updateAdminBhojan(id: string, data: any) {
-  const res = await fetch(`${API_BASE_URL}/admin/bhojan/${id}`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/bhojan/${id}`, {
     method: 'PUT',
     headers: getAdminHeaders(),
     body: JSON.stringify(data)
@@ -418,7 +419,7 @@ export async function updateAdminBhojan(id: string, data: any) {
 }
 
 export async function deleteAdminBhojan(id: string) {
-  const res = await fetch(`${API_BASE_URL}/admin/bhojan/${id}`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/bhojan/${id}`, {
     method: 'DELETE',
     headers: getAdminHeaders()
   });
@@ -427,7 +428,7 @@ export async function deleteAdminBhojan(id: string) {
 }
 
 export async function toggleStatusAdminBhojan(id: string, status?: string) {
-  const res = await fetch(`${API_BASE_URL}/admin/bhojan/${id}/status`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/bhojan/${id}/status`, {
     method: 'PATCH',
     headers: getAdminHeaders(),
     body: JSON.stringify({ status })
@@ -438,7 +439,7 @@ export async function toggleStatusAdminBhojan(id: string, status?: string) {
 
 export async function fetchAdminBhojanReservations() {
   try {
-    const res = await fetch(`${API_BASE_URL}/admin/bhojan/reservations`, {
+    const res = await fetch(`${ADMIN_API_BASE_URL}/bhojan/reservations`, {
       cache: 'no-store',
       headers: getAdminHeaders()
     });
@@ -452,7 +453,7 @@ export async function fetchAdminBhojanReservations() {
 
 export async function fetchAdminBookings() {
   try {
-    const res = await fetch(`${API_BASE_URL}/admin/bookings`, {
+    const res = await fetch(`${ADMIN_API_BASE_URL}/bookings`, {
       cache: 'no-store',
       headers: getAdminHeaders()
     });
@@ -465,7 +466,7 @@ export async function fetchAdminBookings() {
 }
 
 export async function updateAdminBookingStatus(id: string, status: string) {
-  const res = await fetch(`${API_BASE_URL}/admin/bookings/${id}/status`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/bookings/${id}/status`, {
     method: 'PATCH',
     headers: getAdminHeaders(),
     body: JSON.stringify({ status })
@@ -475,7 +476,7 @@ export async function updateAdminBookingStatus(id: string, status: string) {
 }
 
 export async function deleteAdminBooking(id: string) {
-  const res = await fetch(`${API_BASE_URL}/admin/bookings/${id}`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/bookings/${id}`, {
     method: 'DELETE',
     headers: getAdminHeaders()
   });
@@ -485,7 +486,7 @@ export async function deleteAdminBooking(id: string) {
 
 export async function fetchAdminSettings() {
   try {
-    const res = await fetch(`${API_BASE_URL}/admin/settings`, {
+    const res = await fetch(`${ADMIN_API_BASE_URL}/settings`, {
       cache: 'no-store',
       headers: getAdminHeaders()
     });
@@ -498,7 +499,7 @@ export async function fetchAdminSettings() {
 }
 
 export async function updateAdminSettings(data: any) {
-  const res = await fetch(`${API_BASE_URL}/admin/settings`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/settings`, {
     method: 'PUT',
     headers: getAdminHeaders(),
     body: JSON.stringify(data)
@@ -509,7 +510,7 @@ export async function updateAdminSettings(data: any) {
 
 export async function fetchAdminPayments() {
   try {
-    const res = await fetch(`${API_BASE_URL}/admin/payments`, {
+    const res = await fetch(`${ADMIN_API_BASE_URL}/payments`, {
       cache: 'no-store',
       headers: getAdminHeaders()
     });
@@ -522,7 +523,7 @@ export async function fetchAdminPayments() {
 }
 
 export async function createAdminUser(data: any) {
-  const res = await fetch(`${API_BASE_URL}/admin/users`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/users`, {
     method: 'POST',
     headers: getAdminHeaders(),
     body: JSON.stringify(data)
@@ -532,7 +533,7 @@ export async function createAdminUser(data: any) {
 }
 
 export async function updateAdminUserRole(id: string, role: string) {
-  const res = await fetch(`${API_BASE_URL}/admin/users/${id}/role`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/users/${id}/role`, {
     method: 'PATCH',
     headers: getAdminHeaders(),
     body: JSON.stringify({ role })
@@ -542,7 +543,7 @@ export async function updateAdminUserRole(id: string, role: string) {
 }
 
 export async function deleteAdminUser(id: string) {
-  const res = await fetch(`${API_BASE_URL}/admin/users/${id}`, {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/users/${id}`, {
     method: 'DELETE',
     headers: getAdminHeaders()
   });
@@ -552,7 +553,7 @@ export async function deleteAdminUser(id: string) {
 
 export async function fetchPublicNotice() {
   try {
-    const res = await fetch(`${API_BASE_URL}/admin/public-notice`, { cache: 'no-store' });
+    const res = await fetch(`${ADMIN_API_BASE_URL}/public-notice`, { cache: 'no-store' });
     if (!res.ok) return null;
     const json = await res.json();
     return json.data;

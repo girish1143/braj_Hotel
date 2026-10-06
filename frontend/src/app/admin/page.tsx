@@ -67,7 +67,8 @@ import {
   updateAdminSettings,
   createAdminUser,
   updateAdminUserRole,
-  deleteAdminUser
+  deleteAdminUser,
+  ADMIN_API_BASE_URL
 } from '../../lib/api';
 
 interface AdminHotel {
@@ -317,7 +318,7 @@ export default function ProjectOwnerAdminDashboard() {
     setIsVerifying(true);
 
     try {
-      const res = await fetch('http://localhost:5000/api/admin/auth/verify', {
+      const res = await fetch(`${ADMIN_API_BASE_URL}/auth/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ passcode: adminPasscode, email: adminEmail })
@@ -756,7 +757,9 @@ export default function ProjectOwnerAdminDashboard() {
         <div className="flex items-center space-x-3 text-xs">
           <div className="hidden md:flex items-center space-x-2 bg-stone-800/80 px-3 py-1.5 rounded-full border border-stone-700/60">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-stone-300 font-medium text-[11px]">Engine Live (5000)</span>
+            <span className="text-stone-300 font-medium text-[11px] flex items-center gap-1.5">
+              <span className="text-amber-400">🦀</span> Rust Engine (Docker 5001)
+            </span>
           </div>
 
           <button

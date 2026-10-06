@@ -32,8 +32,31 @@ app.use('/api/bhojan', bhojanRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/hotels/onboard', onboardRoutes);
 
-// Role-Guarded Management Routes
-app.use('/api/admin', systemAdminRoutes);           // SYSTEM_ADMIN only
+// Forward all /api/admin requests to Dockerized Rust Admin Backend (port 5001)
+app.use('/api/admin', async (req: Request, res: Response, next) => {
+  try {
+    const targetUrl = `http://localhost:5001${req.originalUrl}`;
+    const headers: Record<string, string> = {
+      'content-type': 'application/json',
+      'x-brijnidhi-role': (req.headers['x-brijnidhi-role'] as string) || 'SYSTEM_ADMIN',
+      'x-brijnidhi-admin-token': (req.headers['x-brijnidhi-admin-token'] as string) || ''
+    };
+    const options: RequestInit = {
+      method: req.method,
+      headers
+    };
+    if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body && Object.keys(req.body).length > 0) {
+      options.body = JSON.stringify(req.body);
+    }
+    const response = await fetch(targetUrl, options);
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch {
+    // If Rust service is unreachable, fallback to express systemAdminRoutes
+    next();
+  }
+});
+app.use('/api/admin', systemAdminRoutes);           // Fallback only
 app.use('/api/hotel-admin', hotelAdminRoutes);      // HOTEL_ADMIN only
 
 // Health check endpoint
