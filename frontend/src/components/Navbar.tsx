@@ -22,6 +22,12 @@ import { fetchPublicNotice } from '../lib/api';
 
 export default function Navbar() {
   const pathname = usePathname();
+
+  // Completely hide public consumer navbar on all admin portals
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/hotel-admin')) {
+    return null;
+  }
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -92,11 +98,15 @@ export default function Navbar() {
       {/* Top Banner - Braj Welcome & Helpline */}
       <div className="bg-amber-950 text-amber-100 text-xs px-4 py-1.5 flex flex-wrap justify-between items-center border-b border-amber-900 gap-2">
         <div className="flex items-center space-x-2 truncate">
-          <span className="font-semibold text-amber-300">🌸 Radhe Radhe!</span>
           {publicNotice ? (
-            <span className="text-amber-200 font-medium truncate max-w-xl">{publicNotice}</span>
+            <span className="text-amber-200 font-medium truncate max-w-xl">
+              {publicNotice.startsWith('🌸') ? publicNotice : `🌸 Radhe Radhe! ${publicNotice}`}
+            </span>
           ) : (
-            <span className="hidden sm:inline">Dedicated Braj Pilgrimage Platform</span>
+            <>
+              <span className="font-semibold text-amber-300">🌸 Radhe Radhe!</span>
+              <span className="hidden sm:inline">Dedicated Braj Pilgrimage Platform</span>
+            </>
           )}
         </div>
 

@@ -1,8 +1,18 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Phone, Mail, MapPin, Heart, ShieldCheck, Sun, Sparkles } from 'lucide-react';
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  // Hide consumer footer on admin portals
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/hotel-admin')) {
+    return null;
+  }
+
   return (
     <footer className="bg-neutral-900 text-neutral-300 border-t-4 border-amber-600">
       {/* Sacred pilgrimage assurance bar */}
