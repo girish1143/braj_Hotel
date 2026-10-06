@@ -417,46 +417,46 @@ export default function LoginModal({
       className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in"
       style={{ top: 0, left: 0, width: '100vw', height: '100vh', margin: 0 }}
     >
-      <div className="relative w-full max-w-md max-h-[92vh] overflow-y-auto bg-white rounded-3xl shadow-2xl border-2 border-amber-300/80 animate-scale-up">
+      <div className="relative w-full max-w-[420px] max-h-[96vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-white rounded-3xl shadow-2xl border-2 border-amber-300/80 animate-scale-up">
         {/* Decorative Top Accent Bar */}
-        <div className="h-2 bg-gradient-to-r from-amber-600 via-orange-500 to-amber-700" />
+        <div className="h-1.5 bg-gradient-to-r from-amber-600 via-orange-500 to-amber-700" />
 
         {/* Close Button */}
         {canClose && onClose && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-full transition cursor-pointer"
+            className="absolute top-3.5 right-3.5 p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-full transition cursor-pointer"
             aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         )}
 
         {/* Modal Header */}
-        <div className="px-6 pt-6 pb-3 text-center">
-          <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-amber-600 via-orange-600 to-amber-500 text-white flex items-center justify-center text-3xl font-serif shadow-lg shadow-orange-500/20 mb-2.5">
+        <div className="px-5 pt-4 pb-1 text-center">
+          <div className="w-11 h-11 mx-auto rounded-2xl bg-gradient-to-tr from-amber-600 via-orange-600 to-amber-500 text-white flex items-center justify-center text-2xl font-serif shadow-md shadow-orange-500/20 mb-1.5">
             🕉️
           </div>
-          <span className="inline-block text-[11px] font-black uppercase tracking-wider text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-200 mb-2">
+          <span className="inline-block text-[10px] font-black uppercase tracking-wider text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 mb-1">
             🙏 Radhe Radhe • Sacred Access
           </span>
-          <h2 className="text-2xl font-black font-serif text-neutral-900">
+          <h2 className="text-xl font-black font-serif text-neutral-900 leading-tight">
             Sign In to Brijnidhi
           </h2>
-          <p className="text-xs text-neutral-600 mt-1 max-w-xs mx-auto">
-            Book verified pilgrimage stays, access temple darshan desks, and manage sacred reservations.
+          <p className="text-[11px] text-neutral-500 mt-0.5 max-w-xs mx-auto">
+            Book verified stays &amp; manage sacred reservations.
           </p>
         </div>
 
         {/* Tabs: Sign In / Register */}
-        <div className="flex border-b border-amber-100 px-6">
+        <div className="flex border-b border-amber-100 px-5">
           <button
             onClick={() => {
               setTab('login');
               setError(null);
               setSuccessMsg(null);
             }}
-            className={`flex-1 py-2.5 text-xs font-bold transition border-b-2 text-center cursor-pointer ${
+            className={`flex-1 py-2 text-xs font-bold transition border-b-2 text-center cursor-pointer ${
               tab === 'login'
                 ? 'border-amber-600 text-amber-800'
                 : 'border-transparent text-neutral-400 hover:text-neutral-700'
@@ -470,7 +470,7 @@ export default function LoginModal({
               setError(null);
               setSuccessMsg(null);
             }}
-            className={`flex-1 py-2.5 text-xs font-bold transition border-b-2 text-center cursor-pointer ${
+            className={`flex-1 py-2 text-xs font-bold transition border-b-2 text-center cursor-pointer ${
               tab === 'register'
                 ? 'border-amber-600 text-amber-800'
                 : 'border-transparent text-neutral-400 hover:text-neutral-700'
@@ -481,7 +481,7 @@ export default function LoginModal({
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 space-y-4">
+        <div className="px-5 py-3.5 space-y-3">
           {error && (
             <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start space-x-2 animate-fade-in">
               <span className="shrink-0 mt-0.5">⚠️</span>
@@ -497,8 +497,9 @@ export default function LoginModal({
           )}
 
           {/* TAB 1: LOGIN */}
+          {/* TAB 1: LOGIN */}
           {tab === 'login' && (
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <form onSubmit={handleLoginSubmit} className="space-y-3">
               {/* Method Toggle: Mobile / Email */}
               <div className="flex bg-neutral-100 p-1 rounded-xl text-xs font-semibold">
                 <button
@@ -509,7 +510,7 @@ export default function LoginModal({
                     setOtpVerified(false);
                     setError(null);
                   }}
-                  className={`flex-1 py-1.5 rounded-lg transition cursor-pointer flex items-center justify-center space-x-1.5 ${
+                  className={`flex-1 py-1 rounded-lg transition cursor-pointer flex items-center justify-center space-x-1.5 ${
                     loginMethod === 'phone'
                       ? 'bg-white text-amber-900 shadow-sm font-bold'
                       : 'text-neutral-500 hover:text-neutral-900'
@@ -526,7 +527,7 @@ export default function LoginModal({
                     setOtpVerified(false);
                     setError(null);
                   }}
-                  className={`flex-1 py-1.5 rounded-lg transition cursor-pointer flex items-center justify-center space-x-1.5 ${
+                  className={`flex-1 py-1 rounded-lg transition cursor-pointer flex items-center justify-center space-x-1.5 ${
                     loginMethod === 'email'
                       ? 'bg-white text-amber-900 shadow-sm font-bold'
                       : 'text-neutral-500 hover:text-neutral-900'
@@ -540,7 +541,7 @@ export default function LoginModal({
               {/* Identifier Input */}
               {loginMethod === 'phone' ? (
                 <div>
-                  <div className="flex justify-between items-center mb-1.5">
+                  <div className="flex justify-between items-center mb-1">
                     <label className="block text-xs font-semibold text-neutral-700">
                       Mobile Number
                     </label>
@@ -566,7 +567,7 @@ export default function LoginModal({
                       placeholder="Enter 10-digit number"
                       maxLength={10}
                       required
-                      className="w-full px-3 py-2.5 text-xs text-neutral-900 rounded-r-xl focus:outline-none disabled:bg-neutral-50 disabled:text-neutral-600 font-medium"
+                      className="w-full px-3 py-2 text-xs text-neutral-900 rounded-r-xl focus:outline-none disabled:bg-neutral-50 disabled:text-neutral-600 font-medium"
                     />
                     {otpVerified && (
                       <button
@@ -585,7 +586,7 @@ export default function LoginModal({
                 </div>
               ) : (
                 <div>
-                  <div className="flex justify-between items-center mb-1.5">
+                  <div className="flex justify-between items-center mb-1">
                     <label className="block text-xs font-semibold text-neutral-700">
                       Email Address
                     </label>
@@ -596,7 +597,7 @@ export default function LoginModal({
                     )}
                   </div>
                   <div className="relative">
-                    <Mail className="w-4 h-4 text-neutral-400 absolute left-3 top-3" />
+                    <Mail className="w-4 h-4 text-neutral-400 absolute left-3 top-2.5" />
                     <input
                       type="email"
                       disabled={otpVerified}
@@ -608,7 +609,7 @@ export default function LoginModal({
                       }}
                       placeholder="devotee@example.com"
                       required
-                      className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl border border-neutral-300 focus:border-amber-600 focus:outline-none disabled:bg-neutral-50"
+                      className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-neutral-300 focus:border-amber-600 focus:outline-none disabled:bg-neutral-50"
                     />
                   </div>
                 </div>
@@ -620,20 +621,20 @@ export default function LoginModal({
                   type="button"
                   onClick={handleSendOtp}
                   disabled={sendingOtp || (loginMethod === 'phone' ? phone.length < 10 : !email.includes('@'))}
-                  className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <KeyRound className="w-4 h-4" />
+                  <KeyRound className="w-3.5 h-3.5" />
                   <span>{sendingOtp ? 'Sending Code...' : 'Get Verification Code (OTP)'}</span>
                 </button>
               )}
 
               {/* Step 2 Section: Enter & Verify OTP */}
               {otpSent && !otpVerified && (
-                <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/90 space-y-3 animate-fade-in">
+                <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-200/90 space-y-2 animate-fade-in">
                   <div className="flex justify-between items-center">
                     <label className="block text-xs font-bold text-amber-950 flex items-center gap-1.5">
                       <Lock className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Enter 6-Digit Verification Code *</span>
+                      <span>Enter 6-Digit Code *</span>
                     </label>
                     <span className="text-[10px] font-black text-amber-800 bg-amber-200/70 px-2 py-0.5 rounded-full border border-amber-300">
                       OTP: 108108
@@ -649,21 +650,21 @@ export default function LoginModal({
                         placeholder="108108"
                         maxLength={6}
                         autoFocus
-                        className="w-full px-3 py-2.5 text-center text-sm font-bold font-mono tracking-widest bg-white rounded-xl border border-amber-300 focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
+                        className="w-full px-3 py-2 text-center text-sm font-bold font-mono tracking-widest bg-white rounded-xl border border-amber-300 focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
                       />
                     </div>
                     <button
                       type="button"
                       onClick={handleVerifyOtp}
                       disabled={verifyingOtp || otpInput.length < 6}
-                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center space-x-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center space-x-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Check className="w-4 h-4" />
                       <span>{verifyingOtp ? 'Checking...' : 'Verify OTP'}</span>
                     </button>
                   </div>
 
-                  <div className="flex justify-between items-center text-[11px] text-neutral-500 pt-1">
+                  <div className="flex justify-between items-center text-[10px] text-neutral-500">
                     <span>Didn&apos;t receive code?</span>
                     {resendCountdown > 0 ? (
                       <span className="text-amber-700 font-semibold">Resend in {resendCountdown}s</span>
@@ -682,9 +683,9 @@ export default function LoginModal({
 
               {/* Verified Confirmation Badge */}
               {otpVerified && (
-                <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center space-x-2 text-xs text-emerald-900 font-bold animate-fade-in">
+                <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center space-x-2 text-xs text-emerald-900 font-bold animate-fade-in">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>OTP verified successfully! Press the button below to sign in.</span>
+                  <span>OTP verified! Click below to sign in.</span>
                 </div>
               )}
 
@@ -692,9 +693,9 @@ export default function LoginModal({
               <button
                 type="submit"
                 disabled={!otpVerified || loading}
-                className={`w-full py-3 rounded-2xl text-xs font-bold flex items-center justify-center space-x-2 transition-all duration-200 ${
+                className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition-all duration-200 ${
                   otpVerified
-                    ? 'btn-primary shadow-lg cursor-pointer transform hover:-translate-y-0.5'
+                    ? 'btn-primary shadow-md cursor-pointer transform hover:-translate-y-0.5'
                     : 'bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed'
                 }`}
               >
@@ -713,9 +714,9 @@ export default function LoginModal({
                 )}
               </button>
 
-              <div className="text-center pt-1">
-                <span className="text-[11px] text-neutral-400">
-                  By continuing, you agree to Brijnidhi&apos;s Terms of Pilgrimage &amp; Privacy Policy.
+              <div className="text-center">
+                <span className="text-[10px] text-neutral-400 leading-none">
+                  By continuing, you agree to Brijnidhi&apos;s Terms &amp; Privacy Policy.
                 </span>
               </div>
             </form>
@@ -723,20 +724,20 @@ export default function LoginModal({
 
           {/* TAB 2: REGISTER */}
           {tab === 'register' && (
-            <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
+            <form onSubmit={handleRegisterSubmit} className="space-y-2.5">
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 mb-1">
                   Full Devotee Name *
                 </label>
                 <div className="relative">
-                  <User className="w-4 h-4 text-neutral-400 absolute left-3 top-3" />
+                  <User className="w-4 h-4 text-neutral-400 absolute left-3 top-2.5" />
                   <input
                     type="text"
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     placeholder="e.g. Ramesh Kumar"
                     required
-                    className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-neutral-300 focus:border-amber-600 focus:outline-none"
+                    className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-neutral-300 focus:border-amber-600 focus:outline-none"
                   />
                 </div>
               </div>
@@ -768,7 +769,7 @@ export default function LoginModal({
                     placeholder="10-digit number"
                     maxLength={10}
                     required
-                    className="w-full px-3 py-2 text-xs text-neutral-900 rounded-r-xl focus:outline-none disabled:bg-neutral-50"
+                    className="w-full px-3 py-1.5 text-xs text-neutral-900 rounded-r-xl focus:outline-none disabled:bg-neutral-50"
                   />
                   {regOtpVerified && (
                     <button
@@ -801,11 +802,11 @@ export default function LoginModal({
 
               {/* Step 2 Section for Register */}
               {regOtpSent && !regOtpVerified && (
-                <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/90 space-y-2.5 animate-fade-in">
+                <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-200/90 space-y-2 animate-fade-in">
                   <div className="flex justify-between items-center">
                     <label className="block text-xs font-bold text-amber-950 flex items-center gap-1.5">
                       <Lock className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Enter 6-Digit Verification Code *</span>
+                      <span>Enter 6-Digit Code *</span>
                     </label>
                     <span className="text-[10px] font-black text-amber-800 bg-amber-200/70 px-2 py-0.5 rounded-full border border-amber-300">
                       OTP: 108108
@@ -820,13 +821,13 @@ export default function LoginModal({
                       placeholder="108108"
                       maxLength={6}
                       autoFocus
-                      className="w-full px-3 py-2 text-center text-sm font-bold font-mono tracking-widest bg-white rounded-xl border border-amber-300 focus:outline-none"
+                      className="w-full px-3 py-1.5 text-center text-sm font-bold font-mono tracking-widest bg-white rounded-xl border border-amber-300 focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={handleRegVerifyOtp}
                       disabled={regVerifyingOtp || regOtpInput.length < 6}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center space-x-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center space-x-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Check className="w-4 h-4" />
                       <span>{regVerifyingOtp ? '...' : 'Verify'}</span>
@@ -852,7 +853,7 @@ export default function LoginModal({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                  <label className="block text-xs font-semibold text-neutral-700 mb-0.5">
                     Email (Optional)
                   </label>
                   <input
@@ -860,11 +861,11 @@ export default function LoginModal({
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                     placeholder="email@example.com"
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-300 focus:border-amber-600 focus:outline-none"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-neutral-300 focus:border-amber-600 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                  <label className="block text-xs font-semibold text-neutral-700 mb-0.5">
                     Home City / State
                   </label>
                   <input
@@ -872,7 +873,7 @@ export default function LoginModal({
                     value={regCity}
                     onChange={(e) => setRegCity(e.target.value)}
                     placeholder="e.g. New Delhi"
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-300 focus:border-amber-600 focus:outline-none"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-neutral-300 focus:border-amber-600 focus:outline-none"
                   />
                 </div>
               </div>
@@ -881,9 +882,9 @@ export default function LoginModal({
               <button
                 type="submit"
                 disabled={!regOtpVerified || loading}
-                className={`w-full py-3 rounded-2xl text-xs font-bold flex items-center justify-center space-x-2 transition-all duration-200 ${
+                className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition-all duration-200 ${
                   regOtpVerified
-                    ? 'btn-primary shadow-lg cursor-pointer transform hover:-translate-y-0.5'
+                    ? 'btn-primary shadow-md cursor-pointer transform hover:-translate-y-0.5'
                     : 'bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed'
                 }`}
               >
