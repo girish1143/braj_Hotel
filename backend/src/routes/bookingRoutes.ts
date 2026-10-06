@@ -104,4 +104,28 @@ router.get('/:referenceOrId', (req: Request, res: Response) => {
   });
 });
 
+export function getAllBookings(): BookingResponse[] {
+  return bookingsStore;
+}
+
+export function updateBookingStatus(idOrRef: string, status: BookingResponse['status']): BookingResponse | null {
+  const booking = bookingsStore.find(
+    (b) => b.id === idOrRef || b.bookingReference.toLowerCase() === idOrRef.toLowerCase()
+  );
+  if (!booking) return null;
+  booking.status = status;
+  return booking;
+}
+
+export function deleteBooking(idOrRef: string): boolean {
+  const idx = bookingsStore.findIndex(
+    (b) => b.id === idOrRef || b.bookingReference.toLowerCase() === idOrRef.toLowerCase()
+  );
+  if (idx === -1) return false;
+  bookingsStore.splice(idx, 1);
+  return true;
+}
+
+export { bookingsStore };
 export default router;
+

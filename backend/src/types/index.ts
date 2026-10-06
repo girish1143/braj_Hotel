@@ -118,7 +118,7 @@ export interface BookingResponse extends BookingRequest {
   taxAmount: number;
   addOnTotal: number;
   grandTotal: number;
-  status: 'CONFIRMED' | 'PENDING';
+  status: 'CONFIRMED' | 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'CHECKED_IN';
   createdAt: string;
 }
 

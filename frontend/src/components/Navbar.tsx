@@ -18,6 +18,7 @@ import {
   LogOut
 } from 'lucide-react';
 import LoginModal from './LoginModal';
+import { fetchPublicNotice } from '../lib/api';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -25,6 +26,17 @@ export default function Navbar() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [publicNotice, setPublicNotice] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetchPublicNotice()
+      .then((data) => {
+        if (data && data.enabled && data.text) {
+          setPublicNotice(data.text);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   React.useEffect(() => {
     const checkAuth = () => {
@@ -79,13 +91,24 @@ export default function Navbar() {
     <>
       {/* Top Banner - Braj Welcome & Helpline */}
       <div className="bg-amber-950 text-amber-100 text-xs px-4 py-1.5 flex flex-wrap justify-between items-center border-b border-amber-900 gap-2">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 truncate">
           <span className="font-semibold text-amber-300">🌸 Radhe Radhe!</span>
-          <span className="hidden sm:inline">Dedicated Braj Pilgrimage Platform</span>
+          {publicNotice ? (
+            <span className="text-amber-200 font-medium truncate max-w-xl">{publicNotice}</span>
+          ) : (
+            <span className="hidden sm:inline">Dedicated Braj Pilgrimage Platform</span>
+          )}
         </div>
 
-        {/* Helpline & List Property */}
+        {/* Helpline & Owner Portal */}
         <div className="flex items-center space-x-4 text-[11px]">
+          <Link
+            href="/admin"
+            className="text-amber-300 hover:text-white font-bold transition-colors flex items-center gap-1"
+          >
+            <span>👑 Owner Portal</span>
+          </Link>
+
           {!isLoggedIn && (
             <Link
               href="/list-property"

@@ -1,0 +1,50 @@
+{
+  "bhojanalayas": [
+    {
+      "id": "bhojan-muwu9ekw",
+      "name": "Radha Rani Satvik Bhojanalaya",
+      "hindiName": "???? ???? ??????? ???????",
+      "slug": "radha-rani-satvik-bhojanalaya",
+      "destinationSlug": "vrindavan",
+      "destinationName": "Vrindavan",
+      "category": "thali",
+      "categoryName": "Satvik Bhojanalaya",
+      "specialityDishes": [
+        "Radha Rani Kheer",
+        "Braj Peda",
+        "Makhan Roti",
+        "Dal Tadka"
+      ],
+      "priceRange": "₹₹ (₹150 - ₹350)",
+      "avgCostForTwo": 220,
+      "pureSatvik": true,
+      "pureDesiGhee": true,
+      "timings": "11:00 AM - 10:00 PM",
+      "nearestLandmark": "Banke Bihari Mandir",
+      "distanceToLandmark": "300m from Main Temple",
+      "walkMinutes": 4,
+      "address": "Near Banke Bihari Marg, Vrindavan",
+      "contactPhone": "+91 98765 11111",
+      "ratingScore": 4.9,
+      "reviewsCount": 108,
+      "status": "APPROVED",
+      "isFeatured": false,
+      "images": [
+        "https://images.unsplash.com/photo-1613292443284-c772179f8006?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1546833999-b9f581a1996d?q=80&w=1000&auto=format&fit=crop"
+      ],
+      "features": [
+        "100% Satvik Pure Veg",
+        "Pure Desi Ghee",
+        "No Onion No Garlic",
+        "AC Family Dining"
+      ],
+      "description": "Authentic divine Braj satvik prasad prepared with devotional purity.",
+      "createdAt": "2026-10-06T15:33:45.105Z",
+      "updatedAt": "2026-10-06T15:33:45.105Z"
+    }
+  ],
+  "reservations": [],
+  "menuItems": [],
+  "reviews": []
+}

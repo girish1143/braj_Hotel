@@ -379,4 +379,187 @@ export async function reserveBhojanThali(data: {
   }
 }
 
+// ==========================================
+// PROJECT OWNER ADMIN PANEL EXTENSIONS
+// ==========================================
+
+export async function fetchAdminBhojanalayas() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/admin/bhojan`, {
+      cache: 'no-store',
+      headers: getAdminHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to fetch admin bhojanalayas');
+    const json = await res.json();
+    return json.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function createAdminBhojan(data: any) {
+  const res = await fetch(`${API_BASE_URL}/admin/bhojan`, {
+    method: 'POST',
+    headers: getAdminHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to create bhojanalaya');
+  return res.json();
+}
+
+export async function updateAdminBhojan(id: string, data: any) {
+  const res = await fetch(`${API_BASE_URL}/admin/bhojan/${id}`, {
+    method: 'PUT',
+    headers: getAdminHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to update bhojanalaya');
+  return res.json();
+}
+
+export async function deleteAdminBhojan(id: string) {
+  const res = await fetch(`${API_BASE_URL}/admin/bhojan/${id}`, {
+    method: 'DELETE',
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to delete bhojanalaya');
+  return res.json();
+}
+
+export async function toggleStatusAdminBhojan(id: string, status?: string) {
+  const res = await fetch(`${API_BASE_URL}/admin/bhojan/${id}/status`, {
+    method: 'PATCH',
+    headers: getAdminHeaders(),
+    body: JSON.stringify({ status })
+  });
+  if (!res.ok) throw new Error('Failed to update status');
+  return res.json();
+}
+
+export async function fetchAdminBhojanReservations() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/admin/bhojan/reservations`, {
+      cache: 'no-store',
+      headers: getAdminHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to fetch reservations');
+    const json = await res.json();
+    return json.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchAdminBookings() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/admin/bookings`, {
+      cache: 'no-store',
+      headers: getAdminHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to fetch bookings');
+    const json = await res.json();
+    return json.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function updateAdminBookingStatus(id: string, status: string) {
+  const res = await fetch(`${API_BASE_URL}/admin/bookings/${id}/status`, {
+    method: 'PATCH',
+    headers: getAdminHeaders(),
+    body: JSON.stringify({ status })
+  });
+  if (!res.ok) throw new Error('Failed to update booking status');
+  return res.json();
+}
+
+export async function deleteAdminBooking(id: string) {
+  const res = await fetch(`${API_BASE_URL}/admin/bookings/${id}`, {
+    method: 'DELETE',
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to delete booking');
+  return res.json();
+}
+
+export async function fetchAdminSettings() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/admin/settings`, {
+      cache: 'no-store',
+      headers: getAdminHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to fetch settings');
+    const json = await res.json();
+    return json.data;
+  } catch {
+    return null;
+  }
+}
+
+export async function updateAdminSettings(data: any) {
+  const res = await fetch(`${API_BASE_URL}/admin/settings`, {
+    method: 'PUT',
+    headers: getAdminHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to update settings');
+  return res.json();
+}
+
+export async function fetchAdminPayments() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/admin/payments`, {
+      cache: 'no-store',
+      headers: getAdminHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to fetch payments');
+    const json = await res.json();
+    return json.data;
+  } catch {
+    return null;
+  }
+}
+
+export async function createAdminUser(data: any) {
+  const res = await fetch(`${API_BASE_URL}/admin/users`, {
+    method: 'POST',
+    headers: getAdminHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to create user');
+  return res.json();
+}
+
+export async function updateAdminUserRole(id: string, role: string) {
+  const res = await fetch(`${API_BASE_URL}/admin/users/${id}/role`, {
+    method: 'PATCH',
+    headers: getAdminHeaders(),
+    body: JSON.stringify({ role })
+  });
+  if (!res.ok) throw new Error('Failed to update user role');
+  return res.json();
+}
+
+export async function deleteAdminUser(id: string) {
+  const res = await fetch(`${API_BASE_URL}/admin/users/${id}`, {
+    method: 'DELETE',
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to delete user');
+  return res.json();
+}
+
+export async function fetchPublicNotice() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/admin/public-notice`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data;
+  } catch {
+    return null;
+  }
+}
+
+
 
