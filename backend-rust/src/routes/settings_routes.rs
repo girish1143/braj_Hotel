@@ -1,7 +1,7 @@
 use crate::handlers::settings_handler::{broadcast_notice, get_public_notice, get_settings, update_settings};
 use crate::state::AppState;
 use axum::{
-    routing::{get, post, put},
+    routing::{get, post},
     Router,
 };
 use std::sync::{Arc, RwLock};
