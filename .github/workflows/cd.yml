@@ -39,6 +39,16 @@ jobs:
           npm ci
           npm run build
 
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Validate Rust Backend Build
+        run: |
+          cd backend-rust
+          cargo check --release
+
   deploy-to-ec2:
     name: Deploy to AWS EC2
     needs: pre-deploy-validation
@@ -94,40 +104,43 @@ jobs:
             git checkout main
             git pull origin main
 
-            # Update Backend
-            echo "📦 Building Backend..."
-            cd backend
-            npm ci --prefer-offline --no-audit
-            npm run build
-            cd ..
+            # Make deployment scripts executable
+            chmod +x scripts/*.sh 2>/dev/null || true
 
-            # Update Frontend
-            echo "📦 Building Frontend..."
-            cd frontend
-            npm ci --prefer-offline --no-audit
-            npm run build
-            cd ..
-
-            # Reload/Restart PM2 processes
-            echo "🔄 Restarting application processes with PM2..."
-            if [ -f "ecosystem.config.js" ]; then
-              pm2 startOrReload ecosystem.config.js --env production
-            else
-              # Fallback if ecosystem.config.js is not yet active
-              pm2 restart brijnidhi-backend || pm2 start backend/dist/index.js --name brijnidhi-backend
-              pm2 restart brijnidhi-frontend || pm2 start "npm --prefix frontend start" --name brijnidhi-frontend
+            # Deploy Services: Node API, Next Frontend, and Rust Admin Backend
+            # Modes supported: 'docker' (Option 1 - default) or 'native' (Option 2)
+            RUST_MODE="${{ secrets.RUST_DEPLOY_MODE }}"
+            if [ -z "$RUST_MODE" ]; then
+              RUST_MODE="docker"
             fi
 
-            # Save PM2 process list so it survives EC2 reboot
-            pm2 save
+            if [ -f "scripts/deploy.sh" ]; then
+              echo "🚀 Executing unified deploy script in mode: $RUST_MODE..."
+              ./scripts/deploy.sh "$RUST_MODE"
+            else
+              echo "📦 Building Backend..."
+              cd backend
+              npm ci --prefer-offline --no-audit
+              npm run build
+              cd ..
+
+              echo "📦 Building Frontend..."
+              cd frontend
+              npm ci --prefer-offline --no-audit
+              npm run build
+              cd ..
+
+              pm2 startOrReload ecosystem.config.js --env production
+              pm2 save
+            fi
 
             # Health Check Verification
-            echo "🩺 Verifying application health..."
+            echo "🩺 Verifying application health across all services..."
             sleep 5
 
-            # 1. Backend API Health Check
+            # 1. Backend Node API Health Check (Port 5000)
             BACKEND_HEALTH_URL="http://127.0.0.1:5000/api/health"
-            echo "Checking Backend: $BACKEND_HEALTH_URL"
+            echo "Checking Backend (Node API): $BACKEND_HEALTH_URL"
             if curl -s -f -m 10 "$BACKEND_HEALTH_URL" > /dev/null; then
               echo "✅ Backend API is healthy!"
             else
@@ -136,7 +149,18 @@ jobs:
               exit 1
             fi
 
-            # 2. Frontend Health Check
+            # 2. Rust Admin API Health Check (Port 5001)
+            RUST_HEALTH_URL="http://127.0.0.1:5001/health"
+            echo "Checking Rust Admin API: $RUST_HEALTH_URL"
+            if curl -s -f -m 10 "$RUST_HEALTH_URL" > /dev/null; then
+              echo "✅ Rust Admin API is healthy!"
+            else
+              echo "❌ Rust Admin health check failed on $RUST_HEALTH_URL"
+              docker logs brijnidhi-admin-rust-container --tail 25 2>/dev/null || pm2 logs brijnidhi-rust-admin --lines 25 --nostream
+              exit 1
+            fi
+
+            # 3. Frontend Health Check (Port 3000)
             FRONTEND_URL="http://127.0.0.1:3000"
             echo "Checking Frontend: $FRONTEND_URL"
             if curl -s -f -m 10 "$FRONTEND_URL" > /dev/null; then

@@ -11,6 +11,8 @@ out/
 dist/
 backend/dist/
 build/
+target/
+backend-rust/target/
 
 # Environment files
 .env

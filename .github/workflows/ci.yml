@@ -68,3 +68,25 @@ jobs:
 
       - name: Build Next.js Application (Typecheck & Compile)
         run: npm run build
+
+  rust-admin-ci:
+    name: Rust Admin Backend CI (Build & Validate)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend-rust
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Check Rust Compilation
+        run: cargo check --release
+
+      - name: Validate Docker Image Build
+        run: docker build -t brijnidhi-admin-rust .
