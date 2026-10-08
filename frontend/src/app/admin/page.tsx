@@ -134,100 +134,63 @@ export default function AdminDashboardPage() {
     nearbyLandmark: '',
     latitude: 27.5815,
     longitude: 77.6978,
-    mainImage: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800',
+    mainImage: '',
     galleryImages: [],
     coverImage: '',
     videos: [],
     // Hotel Specifics
     hotelDetails: {
-      starRating: 4,
+      starRating: 3,
       checkInTime: '12:00 PM',
       checkOutTime: '11:00 AM',
-      totalRooms: 20,
-      availableRooms: 18,
-      amenities: ['Wi-Fi', 'AC', 'Parking', 'Pure Satvik Kitchen', 'Hot Water', 'Power Backup'],
-      rooms: [
-        {
-          id: 'room-1',
-          roomName: 'Deluxe Dham View Suite',
-          roomNumber: '101',
-          roomType: 'Deluxe Room',
-          numberOfBeds: 2,
-          maxGuests: 3,
-          pricePerNight: 2800,
-          discount: 10,
-          taxes: 336,
-          amenities: ['AC', 'Wi-Fi', 'Geyser', 'Balcony'],
-          images: [],
-          availability: true,
-          status: 'Available'
-        }
-      ]
+      totalRooms: 0,
+      availableRooms: 0,
+      amenities: ['Wi-Fi', 'AC', 'Pure Satvik Kitchen', 'Hot Water'],
+      rooms: []
     },
     // Restaurant Specifics
     restaurantDetails: {
-      cuisineTypes: ['North Indian', 'Pure Satvik', 'Braj Specialties'],
+      cuisineTypes: ['North Indian', 'Pure Satvik'],
       openingTime: '07:00 AM',
       closingTime: '10:30 PM',
-      seatingCapacity: 60,
-      averageCost: 350,
-      menu: [
-        {
-          id: 'menu-1',
-          category: 'Breakfast',
-          foodName: 'Vrindavan Bedmi Puri & Aloo Sabzi',
-          description: 'Traditional spiced whole wheat pooris served with methi chutney and hing aloo',
-          price: 120,
-          discount: 0,
-          isVeg: true,
-          isJain: true,
-          availability: true,
-          image: ''
-        }
-      ]
+      seatingCapacity: 0,
+      averageCost: 0,
+      menu: []
     },
     // Ashram Specifics
     ashramDetails: {
       checkInTime: '06:00 AM',
       checkOutTime: '08:00 PM',
       accommodationAvailability: true,
-      totalRooms: 40,
-      totalBeds: 100,
-      donationAmount: 500,
+      totalRooms: 0,
+      totalBeds: 0,
+      donationAmount: 0,
       bookingPrice: 0,
       stayType: 'Donation-based stay',
-      rules: ['Compulsory participation in evening aarti', 'Pure satvik diet only', 'Maintain silence after 10 PM'],
-      facilities: ['Meditation Hall', 'Yoga Center', 'Gaushala', 'Prasadam Kitchen', 'Temple Onsite'],
+      rules: ['Participation in evening aarti', 'Pure satvik diet only'],
+      facilities: ['Meditation Hall', 'Yoga Center', 'Prasadam Kitchen'],
       rooms: []
     },
     // Dharamshala Specifics
     dharamshalaDetails: {
-      totalRooms: 30,
-      totalBeds: 90,
-      roomTypes: ['Single Room', 'Family Hall', 'AC Double Room'],
-      pricePerNight: 400,
+      totalRooms: 0,
+      totalBeds: 0,
+      roomTypes: ['Single Room', 'Family Hall'],
+      pricePerNight: 0,
       checkInTime: '08:00 AM',
       checkOutTime: '08:00 AM',
-      amenities: ['Hot Water', 'Locker Facility', 'Filtered Water', 'Common Dining Hall'],
-      rules: ['Valid ID proof required', 'No smoking or alcohol permitted in sacred premises'],
+      amenities: ['Hot Water', 'Filtered Water'],
+      rules: ['Valid ID proof required'],
       parking: true,
       foodAvailability: true,
       rooms: []
     },
     // Transport Specifics
     transportDetails: {
-      vehicleTypes: ['E-Rickshaw', 'Car (Sedan)', 'Tempo Traveller'],
-      vehicles: [
-        {
-          id: 'veh-1',
-          vehicleNumber: 'UP 85 ER 1008',
-          vehicleType: 'E-Rickshaw',
-          model: 'Mahindra Treo Eco',
-          brand: 'Mahindra',
-          seatingCapacity: 4,
-          driverName: 'Radhe Shyam',
-          driverPhone: '+91 98765 22334',
-          ownerName: 'Vrindavan Seva Rickshaw Union',
+      vehicleTypes: ['E-Rickshaw', 'Car (Sedan)'],
+      vehicles: []
+    }
+  });
           pricePerHour: 150,
           pricePerKm: 15,
           dailyPrice: 900,
@@ -976,12 +939,12 @@ export default function AdminDashboardPage() {
                   </h3>
                   <div className="grid grid-cols-6 gap-2 items-end h-44 pt-6">
                     {(overviewData?.monthlyOccupancy || [
-                      { month: 'May', rate: 68 },
-                      { month: 'Jun', rate: 72 },
-                      { month: 'Jul', rate: 78 },
-                      { month: 'Aug', rate: 85 },
-                      { month: 'Sep', rate: 82 },
-                      { month: 'Oct', rate: 89 }
+                      { month: 'May', rate: 0 },
+                      { month: 'Jun', rate: 0 },
+                      { month: 'Jul', rate: 0 },
+                      { month: 'Aug', rate: 0 },
+                      { month: 'Sep', rate: 0 },
+                      { month: 'Oct', rate: 0 }
                     ]).map((pt: any, i: number) => (
                       <div key={i} className="flex flex-col items-center gap-2">
                         <span className="text-[11px] font-semibold text-slate-300">{pt.rate}%</span>
