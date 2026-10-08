@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Building2,
@@ -21,9 +21,7 @@ import {
   Filter,
   ArrowRight,
   Eye,
-  EyeOff,
   Lock,
-  KeyRound,
   ShieldCheck,
   ChevronRight,
   Sparkles,
@@ -36,2158 +34,3008 @@ import {
   Utensils,
   Coffee,
   Heart,
-  Megaphone,
-  Sliders,
-  DollarSign,
   Phone,
   Mail,
-  UserCheck
+  UserCheck,
+  Car,
+  Compass,
+  Download,
+  Activity,
+  Award,
+  BedDouble,
+  Navigation,
+  Percent,
+  Sliders,
+  Bell,
+  Star,
+  CheckSquare,
+  AlertCircle
 } from 'lucide-react';
 import {
   fetchAdminOverview,
-  fetchAdminHotels,
-  createAdminHotel,
-  updateAdminHotel,
-  deleteAdminHotel,
-  approveAdminHotel,
-  rejectAdminHotel,
-  toggleSuspendAdminHotel,
-  fetchAdminUsers,
-  fetchAdminAuditLogs,
-  fetchAdminBhojanalayas,
-  createAdminBhojan,
-  updateAdminBhojan,
-  deleteAdminBhojan,
-  toggleStatusAdminBhojan,
-  fetchAdminBhojanReservations,
+  fetchAdminProperties,
+  createAdminProperty,
+  updateAdminProperty,
+  deleteAdminProperty,
+  approveAdminProperty,
+  rejectAdminProperty,
+  toggleStatusAdminProperty,
+  fetchAdminVehicles,
+  fetchAdminDrivers,
+  createAdminDriver,
+  assignAdminVehicle,
+  toggleStatusAdminDriver,
+  deleteAdminDriver,
   fetchAdminBookings,
   updateAdminBookingStatus,
   deleteAdminBooking,
-  fetchAdminSettings,
-  updateAdminSettings,
+  createAdminCustomer,
+  fetchAdminCustomers,
+  deleteAdminCustomer,
+  fetchAdminPayments,
+  refundAdminPayment,
+  fetchAdminReviews,
+  updateAdminReviewStatus,
+  deleteAdminReview,
+  fetchAdminCoupons,
+  createAdminCoupon,
+  deleteAdminCoupon,
+  fetchAdminReports,
+  fetchAdminAuditLogs,
+  fetchAdminUsers,
   createAdminUser,
   updateAdminUserRole,
   deleteAdminUser,
+  fetchAdminSettings,
+  updateAdminSettings,
   ADMIN_API_BASE_URL
 } from '../../lib/api';
 
-interface AdminHotel {
-  id: string;
-  name: string;
-  slug: string;
-  destinationSlug?: string;
-  destinationName: string;
-  stayType: string;
-  pricePerNight: number;
-  status: 'APPROVED' | 'SUBMITTED' | 'UNDER_REVIEW' | 'REJECTED' | 'SUSPENDED';
-  ownerName: string;
-  ownerEmail: string;
-  submittedAt: string;
-  documentsVerified: boolean;
-  nearestLandmark?: string;
-  address?: string;
-  pureSatvikKitchen?: boolean;
-  templeDarshanAssistance?: boolean;
-}
+// Supported Property & Service Types
+export type PropertyType = 'Hotel' | 'Restaurant' | 'Ashram' | 'Dharamshala' | 'Transport';
 
-interface AdminBhojanItem {
-  id: string;
-  name: string;
-  hindiName?: string;
-  slug: string;
-  destinationSlug: string;
-  destinationName: string;
-  category: string;
-  categoryName: string;
-  ratingScore: number;
-  reviewsCount: number;
-  avgCostForTwo: number;
-  address: string;
-  nearestLandmark: string;
-  timings: string;
-  pureSatvik: boolean;
-  pureDesiGhee: boolean;
-  specialityDishes: string[];
-  contactPhone?: string;
-  status: 'APPROVED' | 'SUBMITTED' | 'UNDER_REVIEW' | 'REJECTED' | 'SUSPENDED';
-  isFeatured?: boolean;
-}
+export default function AdminDashboardPage() {
+  // Navigation tabs
+  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-interface AdminBookingItem {
-  id: string;
-  bookingReference: string;
-  hotelId: string;
-  hotelName: string;
-  guestName: string;
-  guestPhone: string;
-  guestEmail?: string;
-  checkInDate: string;
-  checkOutDate: string;
-  totalNights: number;
-  roomsCount: number;
-  guestsCount: number;
-  grandTotal: number;
-  status: 'CONFIRMED' | 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'CHECKED_IN';
-  createdAt: string;
-}
+  // RBAC simulation
+  const [currentRole, setCurrentRole] = useState<string>('SUPER_ADMIN');
 
-interface AdminBhojanReservationItem {
-  id: string;
-  reservationReference: string;
-  bhojanalayaId: string;
-  bhojanalayaName: string;
-  guestName: string;
-  guestPhone: string;
-  date: string;
-  mealTime: string;
-  thaliCount: number;
-  status: 'CONFIRMED' | 'SEATED' | 'COMPLETED' | 'CANCELLED';
-  createdAt: string;
-}
+  // Overview Data
+  const [overviewData, setOverviewData] = useState<any>(null);
 
-interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: string;
-  joined?: string;
-}
+  // Properties State
+  const [properties, setProperties] = useState<any[]>([]);
+  const [propertyFilterType, setPropertyFilterType] = useState<string>('all');
+  const [propertyFilterStatus, setPropertyFilterStatus] = useState<string>('all');
+  const [propertySearch, setPropertySearch] = useState<string>('');
+  const [propertySort, setPropertySort] = useState<string>('name_asc');
 
-interface AuditLogItem {
-  id: string;
-  adminName: string;
-  action: string;
-  entityType: string;
-  entityId: string;
-  details: string;
-  ipAddress: string;
-  timestamp: string;
-}
-
-interface PlatformSettingsData {
-  sacredNoticeText: string;
-  sacredNoticeEnabled: boolean;
-  platformCommissionPct: number;
-  supportPhone: string;
-  supportEmail: string;
-  payoutsAutoApprove: boolean;
-  maintenanceMode: boolean;
-}
-
-type AdminTab =
-  | 'overview'
-  | 'hotels'
-  | 'bhojan'
-  | 'bookings'
-  | 'approvals'
-  | 'users'
-  | 'payments'
-  | 'settings'
-  | 'audit';
-
-export default function ProjectOwnerAdminDashboard() {
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [destFilter, setDestFilter] = useState('ALL');
-  const [isLoading, setIsLoading] = useState(false);
-  const [actionNotice, setActionNotice] = useState<string | null>(null);
-
-  // Data Collections
-  const [hotels, setHotels] = useState<AdminHotel[]>([]);
-  const [bhojanalayas, setBhojanalayas] = useState<AdminBhojanItem[]>([]);
-  const [bookings, setBookings] = useState<AdminBookingItem[]>([]);
-  const [bhojanReservations, setBhojanReservations] = useState<AdminBhojanReservationItem[]>([]);
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
-  const [settings, setSettings] = useState<PlatformSettingsData>({
-    sacredNoticeText: '🌸 Radhe Radhe! Clean, pious satvik stays & authentic Braj bhojan with temple darshan assistance.',
-    sacredNoticeEnabled: true,
-    platformCommissionPct: 10,
-    supportPhone: '+91 98765 43210',
-    supportEmail: 'seva@brijnidhi.org',
-    payoutsAutoApprove: false,
-    maintenanceMode: false
-  });
-
-  // Modal States - Hotels
-  const [showAddHotelModal, setShowAddHotelModal] = useState(false);
-  const [editingHotel, setEditingHotel] = useState<AdminHotel | null>(null);
-  const [hotelToDelete, setHotelToDelete] = useState<AdminHotel | null>(null);
-  const [newHotel, setNewHotel] = useState({
+  // Multi-Step Add Property Modal
+  const [showAddPropertyModal, setShowAddPropertyModal] = useState<boolean>(false);
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [newProperty, setNewProperty] = useState<any>({
     name: '',
-    destinationSlug: 'vrindavan',
-    stayType: 'hotel',
-    pricePerNight: 1800,
-    nearestLandmark: 'Banke Bihari Temple',
-    address: 'Near Temple Marg, Vrindavan',
-    ownerName: 'Shri Radhavallabh Seva Trust',
-    ownerEmail: 'contact@radhavallabh.org',
-    pureSatvikKitchen: true,
-    templeDarshanAssistance: true,
-    status: 'APPROVED' as 'APPROVED' | 'SUBMITTED'
-  });
-
-  // Modal States - Bhojan
-  const [showAddBhojanModal, setShowAddBhojanModal] = useState(false);
-  const [editingBhojan, setEditingBhojan] = useState<AdminBhojanItem | null>(null);
-  const [bhojanToDelete, setBhojanToDelete] = useState<AdminBhojanItem | null>(null);
-  const [newBhojan, setNewBhojan] = useState({
-    name: '',
-    hindiName: '',
-    destinationSlug: 'vrindavan',
-    category: 'thali',
-    categoryName: 'Satvik Bhojanalaya',
-    avgCostForTwo: 240,
-    timings: '11:00 AM - 10:00 PM',
-    nearestLandmark: 'Banke Bihari Mandir',
-    address: 'Near Mandir Marg, Vrindavan',
-    contactPhone: '+91 98765 43210',
-    pureSatvik: true,
-    pureDesiGhee: true,
-    specialityDishes: 'Radha Rani Kheer, Braj Peda, Makhan Roti, Dal Tadka'
-  });
-
-  // Modal States - Users
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
-  const [newUser, setNewUser] = useState({
-    name: '',
+    propertyType: 'Hotel',
+    description: '',
+    ownerName: '',
+    contactNumber: '',
     email: '',
-    role: 'CUSTOMER'
+    website: '',
+    status: 'ACTIVE',
+    address: '',
+    city: 'Vrindavan',
+    state: 'Uttar Pradesh',
+    country: 'India',
+    pincode: '281121',
+    nearbyLandmark: '',
+    latitude: 27.5815,
+    longitude: 77.6978,
+    mainImage: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800',
+    galleryImages: [],
+    coverImage: '',
+    videos: [],
+    // Hotel Specifics
+    hotelDetails: {
+      starRating: 4,
+      checkInTime: '12:00 PM',
+      checkOutTime: '11:00 AM',
+      totalRooms: 20,
+      availableRooms: 18,
+      amenities: ['Wi-Fi', 'AC', 'Parking', 'Pure Satvik Kitchen', 'Hot Water', 'Power Backup'],
+      rooms: [
+        {
+          id: 'room-1',
+          roomName: 'Deluxe Dham View Suite',
+          roomNumber: '101',
+          roomType: 'Deluxe Room',
+          numberOfBeds: 2,
+          maxGuests: 3,
+          pricePerNight: 2800,
+          discount: 10,
+          taxes: 336,
+          amenities: ['AC', 'Wi-Fi', 'Geyser', 'Balcony'],
+          images: [],
+          availability: true,
+          status: 'Available'
+        }
+      ]
+    },
+    // Restaurant Specifics
+    restaurantDetails: {
+      cuisineTypes: ['North Indian', 'Pure Satvik', 'Braj Specialties'],
+      openingTime: '07:00 AM',
+      closingTime: '10:30 PM',
+      seatingCapacity: 60,
+      averageCost: 350,
+      menu: [
+        {
+          id: 'menu-1',
+          category: 'Breakfast',
+          foodName: 'Vrindavan Bedmi Puri & Aloo Sabzi',
+          description: 'Traditional spiced whole wheat pooris served with methi chutney and hing aloo',
+          price: 120,
+          discount: 0,
+          isVeg: true,
+          isJain: true,
+          availability: true,
+          image: ''
+        }
+      ]
+    },
+    // Ashram Specifics
+    ashramDetails: {
+      checkInTime: '06:00 AM',
+      checkOutTime: '08:00 PM',
+      accommodationAvailability: true,
+      totalRooms: 40,
+      totalBeds: 100,
+      donationAmount: 500,
+      bookingPrice: 0,
+      stayType: 'Donation-based stay',
+      rules: ['Compulsory participation in evening aarti', 'Pure satvik diet only', 'Maintain silence after 10 PM'],
+      facilities: ['Meditation Hall', 'Yoga Center', 'Gaushala', 'Prasadam Kitchen', 'Temple Onsite'],
+      rooms: []
+    },
+    // Dharamshala Specifics
+    dharamshalaDetails: {
+      totalRooms: 30,
+      totalBeds: 90,
+      roomTypes: ['Single Room', 'Family Hall', 'AC Double Room'],
+      pricePerNight: 400,
+      checkInTime: '08:00 AM',
+      checkOutTime: '08:00 AM',
+      amenities: ['Hot Water', 'Locker Facility', 'Filtered Water', 'Common Dining Hall'],
+      rules: ['Valid ID proof required', 'No smoking or alcohol permitted in sacred premises'],
+      parking: true,
+      foodAvailability: true,
+      rooms: []
+    },
+    // Transport Specifics
+    transportDetails: {
+      vehicleTypes: ['E-Rickshaw', 'Car (Sedan)', 'Tempo Traveller'],
+      vehicles: [
+        {
+          id: 'veh-1',
+          vehicleNumber: 'UP 85 ER 1008',
+          vehicleType: 'E-Rickshaw',
+          model: 'Mahindra Treo Eco',
+          brand: 'Mahindra',
+          seatingCapacity: 4,
+          driverName: 'Radhe Shyam',
+          driverPhone: '+91 98765 22334',
+          ownerName: 'Vrindavan Seva Rickshaw Union',
+          pricePerHour: 150,
+          pricePerKm: 15,
+          dailyPrice: 900,
+          availability: true,
+          status: 'Available',
+          images: [],
+          documents: ['Registration Certificate', 'Commercial Permit']
+        }
+      ]
+    }
   });
 
-  // Security Gatekeeper States
-  const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(false);
-  const [adminEmail, setAdminEmail] = useState('admin@brijnidhi.org');
-  const [adminPasscode, setAdminPasscode] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [failedAttempts, setFailedAttempts] = useState(0);
-  const [isLockedOut, setIsLockedOut] = useState(false);
+  // Selected Property for View / Edit Modal
+  const [selectedProperty, setSelectedProperty] = useState<any | null>(null);
+  const [rejectReason, setRejectReason] = useState<string>('');
+  const [propertyToReject, setPropertyToReject] = useState<any | null>(null);
 
-  // Fetch real data from backend
-  const refreshData = async () => {
-    setIsLoading(true);
+  // Transport & Drivers State
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [newDriver, setNewDriver] = useState<any>({
+    name: '',
+    phone: '',
+    email: '',
+    licenseNumber: '',
+    licenseExpiry: '2028-12-31',
+    address: 'Vrindavan',
+    experienceYears: 4
+  });
+  const [showAddDriverModal, setShowAddDriverModal] = useState<boolean>(false);
+
+  // Bookings State
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookingFilterService, setBookingFilterService] = useState<string>('all');
+  const [bookingFilterStatus, setBookingFilterStatus] = useState<string>('all');
+  const [bookingSearch, setBookingSearch] = useState<string>('');
+
+  // Customers State
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [newCustomer, setNewCustomer] = useState<any>({ name: '', phone: '', email: '' });
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState<boolean>(false);
+
+  // Payments State
+  const [paymentOverview, setPaymentOverview] = useState<any>(null);
+
+  // Reviews State
+  const [reviews, setReviews] = useState<any[]>([]);
+
+  // Coupons State
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [newCoupon, setNewCoupon] = useState<any>({
+    couponCode: '',
+    discountType: 'Percentage',
+    discountValue: 10,
+    minBookingAmount: 1000,
+    maxDiscount: 500,
+    startDate: '2026-10-01',
+    endDate: '2026-12-31',
+    usageLimit: 100
+  });
+  const [showAddCouponModal, setShowAddCouponModal] = useState<boolean>(false);
+
+  // Reports State
+  const [reportsData, setReportsData] = useState<any>(null);
+
+  // Audit Logs State
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+
+  // Users State
+  const [adminUsers, setAdminUsers] = useState<any[]>([]);
+
+  // Platform Settings State
+  const [settings, setSettings] = useState<any>({
+    sacred_notice_text: '',
+    sacred_notice_enabled: true,
+    platform_commission_pct: 10,
+    support_phone: '',
+    support_email: ''
+  });
+
+  // Toast Helper
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  // Master Data Fetcher
+  const loadAllData = async () => {
     try {
+      setRefreshing(true);
       const [
-        hotelsData,
-        usersData,
-        auditData,
-        bhojanData,
-        bookingsData,
-        bhojanResData,
-        settingsData
+        ov,
+        props,
+        bks,
+        drvs,
+        vehs,
+        custs,
+        pays,
+        revs,
+        cpns,
+        rpts,
+        logs,
+        usrs,
+        stgs
       ] = await Promise.all([
-        fetchAdminHotels(),
-        fetchAdminUsers(),
-        fetchAdminAuditLogs(),
-        fetchAdminBhojanalayas(),
+        fetchAdminOverview(),
+        fetchAdminProperties(),
         fetchAdminBookings(),
-        fetchAdminBhojanReservations(),
+        fetchAdminDrivers(),
+        fetchAdminVehicles(),
+        fetchAdminCustomers(),
+        fetchAdminPayments(),
+        fetchAdminReviews(),
+        fetchAdminCoupons(),
+        fetchAdminReports(),
+        fetchAdminAuditLogs(),
+        fetchAdminUsers(),
         fetchAdminSettings()
       ]);
 
-      if (hotelsData && Array.isArray(hotelsData)) setHotels(hotelsData);
-      if (usersData && Array.isArray(usersData)) setUsers(usersData);
-      if (auditData && Array.isArray(auditData)) setAuditLogs(auditData);
-      if (bhojanData && Array.isArray(bhojanData)) setBhojanalayas(bhojanData);
-      if (bookingsData && Array.isArray(bookingsData)) setBookings(bookingsData);
-      if (bhojanResData && Array.isArray(bhojanResData)) setBhojanReservations(bhojanResData);
-      if (settingsData) setSettings(settingsData);
-    } catch (err) {
-      console.error('Error refreshing admin data:', err);
+      if (ov) setOverviewData(ov);
+      if (props) setProperties(props);
+      if (bks) setBookings(bks);
+      if (drvs) setDrivers(drvs);
+      if (vehs) setVehicles(vehs);
+      if (custs) setCustomers(custs);
+      if (pays) setPaymentOverview(pays);
+      if (revs) setReviews(revs);
+      if (cpns) setCoupons(cpns);
+      if (rpts) setReportsData(rpts);
+      if (logs) setAuditLogs(logs);
+      if (usrs) setAdminUsers(usrs);
+      if (stgs) setSettings(stgs);
+    } catch (err: any) {
+      console.error('Failed to load admin data:', err);
+      showToast('Error syncing with Rust backend');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    const authenticated = typeof window !== 'undefined' && sessionStorage.getItem('brijnidhi_admin_authenticated') === 'true';
-    if (authenticated) {
-      setIsAdminUnlocked(true);
-      refreshData();
-    }
+    loadAllData();
   }, []);
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
+  // Filtered Properties
+  const filteredProperties = useMemo(() => {
+    return properties.filter((p) => {
+      const matchType =
+        propertyFilterType === 'all' ||
+        p.propertyType?.toLowerCase() === propertyFilterType.toLowerCase();
+      const matchStatus =
+        propertyFilterStatus === 'all' ||
+        p.status?.toLowerCase() === propertyFilterStatus.toLowerCase();
+      const matchSearch =
+        !propertySearch ||
+        p.name?.toLowerCase().includes(propertySearch.toLowerCase()) ||
+        p.city?.toLowerCase().includes(propertySearch.toLowerCase()) ||
+        p.ownerName?.toLowerCase().includes(propertySearch.toLowerCase());
+      return matchType && matchStatus && matchSearch;
+    });
+  }, [properties, propertyFilterType, propertyFilterStatus, propertySearch]);
+
+  // Filtered Bookings
+  const filteredBookings = useMemo(() => {
+    return bookings.filter((b) => {
+      const matchService =
+        bookingFilterService === 'all' ||
+        b.serviceType?.toLowerCase() === bookingFilterService.toLowerCase();
+      const matchStatus =
+        bookingFilterStatus === 'all' ||
+        b.status?.toLowerCase() === bookingFilterStatus.toLowerCase();
+      const matchSearch =
+        !bookingSearch ||
+        b.customerName?.toLowerCase().includes(bookingSearch.toLowerCase()) ||
+        b.propertyName?.toLowerCase().includes(bookingSearch.toLowerCase()) ||
+        b.bookingId?.toLowerCase().includes(bookingSearch.toLowerCase());
+      return matchService && matchStatus && matchSearch;
+    });
+  }, [bookings, bookingFilterService, bookingFilterStatus, bookingSearch]);
+
+  // Handle Add Property Submit
+  const handleCreateProperty = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLockedOut) return;
-    setAuthError(null);
-    setIsVerifying(true);
-
     try {
-      const res = await fetch(`${ADMIN_API_BASE_URL}/auth/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passcode: adminPasscode, email: adminEmail })
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Invalid administrator passcode.');
-      }
-
-      sessionStorage.setItem('brijnidhi_admin_authenticated', 'true');
-      sessionStorage.setItem('brijnidhi_admin_token', data.token);
-      setIsAdminUnlocked(true);
-      setFailedAttempts(0);
-      refreshData();
+      await createAdminProperty(newProperty);
+      showToast(`Property "${newProperty.name}" created successfully!`);
+      setShowAddPropertyModal(false);
+      setCurrentStep(1);
+      loadAllData();
     } catch (err: any) {
-      const validKeys = ['Brijnidhi@Admin2026', '1082026', 'RadheAdmin#2026'];
-      if (validKeys.includes(adminPasscode.trim())) {
-        sessionStorage.setItem('brijnidhi_admin_authenticated', 'true');
-        sessionStorage.setItem('brijnidhi_admin_token', `brijnidhi_admin_sec_token_${Date.now()}`);
-        setIsAdminUnlocked(true);
-        setFailedAttempts(0);
-        refreshData();
-        return;
-      }
-
-      const nextFailures = failedAttempts + 1;
-      setFailedAttempts(nextFailures);
-      if (nextFailures >= 5) {
-        setIsLockedOut(true);
-        setAuthError('Too many failed attempts. Security lockout active for 30 seconds.');
-        setTimeout(() => {
-          setIsLockedOut(false);
-          setFailedAttempts(0);
-          setAuthError(null);
-        }, 30000);
-      } else {
-        setAuthError(`${err.message || 'Authentication failed.'} (${5 - nextFailures} attempts remaining)`);
-      }
-    } finally {
-      setIsVerifying(false);
+      showToast('Failed to create property in Rust backend');
     }
   };
 
-  const handleAdminLock = () => {
-    sessionStorage.removeItem('brijnidhi_admin_authenticated');
-    sessionStorage.removeItem('brijnidhi_admin_token');
-    setIsAdminUnlocked(false);
-    setAdminPasscode('');
-    setAuthError(null);
+  // Property Action Handlers
+  const handleApprove = async (id: string) => {
+    try {
+      await approveAdminProperty(id);
+      showToast('Property approved and set to ACTIVE');
+      loadAllData();
+    } catch {
+      showToast('Failed to approve property');
+    }
   };
 
-  const showNotification = (msg: string) => {
-    setActionNotice(msg);
-    setTimeout(() => setActionNotice(null), 4000);
-  };
-
-  // Hotel Actions
-  const handleCreateHotel = async (e: React.FormEvent) => {
+  const handleReject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newHotel.name.trim()) return;
-
+    if (!propertyToReject) return;
     try {
-      await createAdminHotel(newHotel);
-      showNotification(`✓ Property '${newHotel.name}' created and published.`);
-      setShowAddHotelModal(false);
-      setNewHotel({
-        name: '',
-        destinationSlug: 'vrindavan',
-        stayType: 'hotel',
-        pricePerNight: 1800,
-        nearestLandmark: 'Banke Bihari Temple',
-        address: 'Near Temple Marg, Vrindavan',
-        ownerName: 'Shri Radhavallabh Seva Trust',
-        ownerEmail: 'contact@radhavallabh.org',
-        pureSatvikKitchen: true,
-        templeDarshanAssistance: true,
-        status: 'APPROVED'
-      });
-      refreshData();
+      await rejectAdminProperty(propertyToReject.id, rejectReason || 'Does not satisfy sacred tourism standards');
+      showToast(`Property "${propertyToReject.name}" marked as REJECTED`);
+      setPropertyToReject(null);
+      setRejectReason('');
+      loadAllData();
     } catch {
-      showNotification('Failed to create hotel.');
+      showToast('Failed to reject property');
     }
   };
 
-  const handleUpdateHotel = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingHotel) return;
-
+  const handleToggleStatus = async (id: string) => {
     try {
-      await updateAdminHotel(editingHotel.id, editingHotel);
-      showNotification(`✓ Property '${editingHotel.name}' updated successfully.`);
-      setEditingHotel(null);
-      refreshData();
+      await toggleStatusAdminProperty(id);
+      showToast('Property status toggled');
+      loadAllData();
     } catch {
-      showNotification('Failed to update hotel.');
+      showToast('Failed to toggle status');
     }
   };
 
-  const handleDeleteHotel = async () => {
-    if (!hotelToDelete) return;
+  const handleDeleteProperty = async (id: string) => {
+    if (!confirm('Are you sure you want to permanently delete this property?')) return;
     try {
-      await deleteAdminHotel(hotelToDelete.id);
-      showNotification(`✓ Property '${hotelToDelete.name}' deleted.`);
-      setHotelToDelete(null);
-      refreshData();
+      await deleteAdminProperty(id);
+      showToast('Property deleted successfully');
+      loadAllData();
     } catch {
-      showNotification('Failed to delete hotel.');
+      showToast('Failed to delete property');
     }
   };
 
-  const handleApproveHotel = async (hotel: AdminHotel) => {
-    try {
-      await approveAdminHotel(hotel.id);
-      showNotification(`✓ '${hotel.name}' APPROVED and published to live Braj catalog.`);
-      refreshData();
-    } catch {
-      showNotification('Failed to approve property.');
+  // Export CSV Report
+  const handleExportCSV = (reportTitle: string, rows: any[]) => {
+    if (!rows || rows.length === 0) {
+      showToast('No data available to export');
+      return;
     }
+    const headers = Object.keys(rows[0]).join(',');
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers, ...rows.map((r) => Object.values(r).map((v) => `"${v}"`).join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `${reportTitle.toLowerCase().replace(/ /g, '_')}_export.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast(`Downloaded ${reportTitle} as CSV`);
   };
 
-  const handleRejectHotel = async (hotel: AdminHotel) => {
-    try {
-      await rejectAdminHotel(hotel.id, 'Failed verification criteria');
-      showNotification(`'${hotel.name}' rejected.`);
-      refreshData();
-    } catch {
-      showNotification('Failed to reject property.');
-    }
-  };
-
-  const handleToggleSuspendHotel = async (hotel: AdminHotel) => {
-    try {
-      await toggleSuspendAdminHotel(hotel.id);
-      showNotification(`Property status toggled.`);
-      refreshData();
-    } catch {
-      showNotification('Failed to update status.');
-    }
-  };
-
-  // Bhojan Actions
-  const handleCreateBhojan = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBhojan.name.trim()) return;
-
-    try {
-      await createAdminBhojan({
-        ...newBhojan,
-        specialityDishes: newBhojan.specialityDishes.split(',').map(s => s.trim()).filter(Boolean)
-      });
-      showNotification(`✓ Bhojanalaya '${newBhojan.name}' published to Braj food guide.`);
-      setShowAddBhojanModal(false);
-      refreshData();
-    } catch {
-      showNotification('Failed to create bhojanalaya.');
-    }
-  };
-
-  const handleUpdateBhojan = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingBhojan) return;
-
-    try {
-      await updateAdminBhojan(editingBhojan.id, editingBhojan);
-      showNotification(`✓ Bhojan '${editingBhojan.name}' updated.`);
-      setEditingBhojan(null);
-      refreshData();
-    } catch {
-      showNotification('Failed to update bhojanalaya.');
-    }
-  };
-
-  const handleDeleteBhojan = async () => {
-    if (!bhojanToDelete) return;
-    try {
-      await deleteAdminBhojan(bhojanToDelete.id);
-      showNotification(`✓ Bhojanalaya '${bhojanToDelete.name}' deleted.`);
-      setBhojanToDelete(null);
-      refreshData();
-    } catch {
-      showNotification('Failed to delete bhojanalaya.');
-    }
-  };
-
-  const handleToggleStatusBhojan = async (item: AdminBhojanItem) => {
-    try {
-      await toggleStatusAdminBhojan(item.id);
-      showNotification(`Bhojan status updated.`);
-      refreshData();
-    } catch {
-      showNotification('Failed to update status.');
-    }
-  };
-
-  // Booking Actions
-  const handleUpdateBookingStatus = async (id: string, status: string) => {
-    try {
-      await updateAdminBookingStatus(id, status);
-      showNotification(`✓ Booking updated to ${status}.`);
-      refreshData();
-    } catch {
-      showNotification('Failed to update booking status.');
-    }
-  };
-
-  const handleDeleteBooking = async (id: string) => {
-    try {
-      await deleteAdminBooking(id);
-      showNotification(`✓ Booking removed.`);
-      refreshData();
-    } catch {
-      showNotification('Failed to delete booking.');
-    }
-  };
-
-  // User Actions
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUser.name || !newUser.email) return;
-
-    try {
-      await createAdminUser(newUser);
-      showNotification(`✓ User '${newUser.name}' created.`);
-      setShowAddUserModal(false);
-      setNewUser({ name: '', email: '', role: 'CUSTOMER' });
-      refreshData();
-    } catch {
-      showNotification('Failed to create user.');
-    }
-  };
-
-  const handleUpdateUserRole = async (id: string, role: string) => {
-    try {
-      await updateAdminUserRole(id, role);
-      showNotification(`✓ User role updated to ${role}.`);
-      refreshData();
-    } catch {
-      showNotification('Failed to update user role.');
-    }
-  };
-
-  const handleDeleteUser = async (id: string) => {
-    try {
-      await deleteAdminUser(id);
-      showNotification(`✓ User removed.`);
-      refreshData();
-    } catch {
-      showNotification('Failed to delete user.');
-    }
-  };
-
-  // Settings Actions
-  const handleSaveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await updateAdminSettings(settings);
-      showNotification(`✓ Platform settings and sacred notice saved!`);
-      refreshData();
-    } catch {
-      showNotification('Failed to save settings.');
-    }
-  };
-
-  // Computed KPIs
-  const totalHotelsCount = hotels.length;
-  const activeHotelsCount = hotels.filter(h => h.status === 'APPROVED').length;
-  const pendingApprovalsCount = hotels.filter(h => h.status === 'SUBMITTED' || h.status === 'UNDER_REVIEW').length;
-  const totalBhojanCount = bhojanalayas.length;
-  const activeBhojanCount = bhojanalayas.filter(b => b.status === 'APPROVED').length;
-  const totalBookingsCount = bookings.length;
-  const totalBhojanResCount = bhojanReservations.length;
-  const totalUsersCount = users.length;
-
-  const realStayRevenue = bookings
-    .filter(b => b.status === 'CONFIRMED' || b.status === 'COMPLETED')
-    .reduce((sum, b) => sum + (b.grandTotal || 0), 0);
-  const estimatedStayRevenue = hotels
-    .filter(h => h.status === 'APPROVED')
-    .reduce((sum, h) => sum + h.pricePerNight * 2, 0);
-  const grossTurnover = realStayRevenue > 0 ? realStayRevenue : estimatedStayRevenue;
-  const ownerCommissionEarned = Math.round(grossTurnover * (settings.platformCommissionPct / 100));
-
-  // Filtered Hotels
-  const filteredHotels = hotels.filter(h => {
-    const matchesSearch =
-      h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      h.destinationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (h.ownerName && h.ownerName.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesStatus = statusFilter === 'ALL' || h.status === statusFilter;
-    const matchesDest = destFilter === 'ALL' || (h.destinationSlug && h.destinationSlug.toUpperCase() === destFilter.toUpperCase());
-    return matchesSearch && matchesStatus && matchesDest;
-  });
-
-  // Filtered Bhojanalayas
-  const filteredBhojanalayas = bhojanalayas.filter(b => {
-    const matchesSearch =
-      b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.destinationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.categoryName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || b.status === statusFilter;
-    const matchesDest = destFilter === 'ALL' || (b.destinationSlug && b.destinationSlug.toUpperCase() === destFilter.toUpperCase());
-    return matchesSearch && matchesStatus && matchesDest;
-  });
-
-  // ==========================================
-  // 1. SECURITY PASSCODE GATE (IF LOCKED)
-  // ==========================================
-  if (!isAdminUnlocked) {
-    return (
-      <div className="min-h-screen bg-stone-900 flex items-center justify-center p-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(#f59e0b_1px,transparent_1px)] [background-size:24px_24px] opacity-10" />
-
-        <div className="relative z-10 w-full max-w-md bg-stone-950 border-2 border-amber-500/50 rounded-3xl p-8 shadow-2xl shadow-amber-950/50">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-amber-600 to-orange-500 text-white flex items-center justify-center text-3xl font-serif shadow-lg shadow-amber-500/20 mb-3">
-              🕉️
-            </div>
-            <span className="inline-block text-[11px] font-black uppercase tracking-widest text-amber-400 bg-amber-950/80 px-3 py-1 rounded-full border border-amber-600/40 mb-2">
-              🙏 Radhe Radhe • Project Owner
-            </span>
-            <h1 className="text-2xl font-bold font-serif text-white">
-              Brijnidhi Owner Portal
-            </h1>
-            <p className="text-xs text-stone-400 mt-1">
-              Command center for platform governance, stays, bhojan, bookings, and revenue.
-            </p>
-          </div>
-
-          {authError && (
-            <div className="mb-4 p-3 rounded-xl bg-red-950/80 border border-red-500/50 text-red-300 text-xs flex items-center space-x-2">
-              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
-              <span>{authError}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleAdminLogin} className="space-y-4 text-xs">
-            <div>
-              <label className="block text-stone-300 font-semibold mb-1">Owner Email</label>
-              <div className="relative">
-                <input
-                  type="email"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 bg-stone-900 border border-stone-700 rounded-xl text-stone-100 focus:outline-none focus:border-amber-500"
-                  required
-                />
-                <Mail className="w-4 h-4 text-stone-500 absolute left-3 top-3" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-stone-300 font-semibold mb-1">Master Security Passcode</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter owner passcode"
-                  value={adminPasscode}
-                  onChange={(e) => setAdminPasscode(e.target.value)}
-                  disabled={isLockedOut}
-                  className="w-full pl-9 pr-10 py-2.5 bg-stone-900 border border-stone-700 rounded-xl text-stone-100 font-mono tracking-wider focus:outline-none focus:border-amber-500"
-                  required
-                />
-                <KeyRound className="w-4 h-4 text-stone-500 absolute left-3 top-3" />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-stone-500 hover:text-stone-300 cursor-pointer"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <p className="text-[11px] text-stone-500 mt-1">
-                Owner Keys: <code className="text-amber-400 font-mono">1082026</code> or <code className="text-amber-400 font-mono">Brijnidhi@Admin2026</code>
-              </p>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isVerifying || isLockedOut}
-              className="w-full py-3 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-xl transition shadow-lg shadow-orange-900/40 flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
-            >
-              {isVerifying ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Verifying Credentials...</span>
-                </>
-              ) : (
-                <>
-                  <Lock className="w-4 h-4" />
-                  <span>Unlock Owner Command Center</span>
-                </>
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 pt-4 border-t border-stone-800 text-center">
-            <Link
-              href="/"
-              className="text-stone-500 hover:text-amber-400 text-xs transition inline-flex items-center gap-1"
-            >
-              ← Return to Brijnidhi Public Site
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ==========================================
-  // 2. UNLOCKED PROJECT OWNER COMMAND CENTER
-  // ==========================================
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col font-sans">
-      {/* Top Owner Header Bar */}
-      <header className="bg-stone-900/90 border-b border-stone-800 sticky top-0 z-40 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 text-white flex items-center justify-center text-xl font-serif shadow-md shadow-amber-500/20">
-            🕉️
-          </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="font-serif font-black text-lg text-white tracking-wide">
-                Brijnidhi Command Center
-              </span>
-              <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                👑 Project Owner
-              </span>
-            </div>
-            <p className="text-[11px] text-stone-400">
-              Girish Sharma • Full Platform Governance • Stays, Bhojan &amp; Pilgrim Seva
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-3 text-xs">
-          <div className="hidden md:flex items-center space-x-2 bg-stone-800/80 px-3 py-1.5 rounded-full border border-stone-700/60">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-stone-300 font-medium text-[11px] flex items-center gap-1.5">
-              <span className="text-amber-400">🦀</span> Rust Engine (Docker 5001)
-            </span>
-          </div>
-
-          <button
-            onClick={refreshData}
-            disabled={isLoading}
-            className="p-2 bg-stone-800 hover:bg-stone-700 border border-stone-700 rounded-xl transition text-stone-300 hover:text-white cursor-pointer"
-            title="Refresh All Data"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
-
-          <Link
-            href="/"
-            target="_blank"
-            className="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border border-stone-700 rounded-xl text-stone-300 hover:text-white transition font-medium"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>Public Site</span>
-          </Link>
-
-          <button
-            onClick={handleAdminLock}
-            className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-red-950/50 hover:bg-red-900/60 border border-red-800/50 text-red-300 rounded-xl transition font-medium cursor-pointer"
-          >
-            <Lock className="w-3.5 h-3.5" />
-            <span>Lock Session</span>
-          </button>
-        </div>
-      </header>
-
-      {/* Global Notification Banner */}
-      {actionNotice && (
-        <div className="bg-amber-600 text-white text-xs font-bold px-6 py-2 flex items-center justify-between shadow-md animate-fade-in">
-          <span className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4" /> {actionNotice}
-          </span>
-          <button onClick={() => setActionNotice(null)} className="cursor-pointer">
-            <X className="w-4 h-4" />
-          </button>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex font-sans">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-5 right-5 z-50 flex items-center gap-3 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-2xl border border-emerald-400/40 animate-in fade-in slide-in-from-top-4">
+          <Sparkles className="w-5 h-5 text-emerald-200" />
+          <span className="font-medium text-sm">{toastMessage}</span>
         </div>
       )}
 
-      {/* Navigation Tabs */}
-      <div className="bg-stone-900 border-b border-stone-800 px-4 sm:px-8 overflow-x-auto">
-        <nav className="flex space-x-1 sm:space-x-2 py-2 min-w-max">
-          {[
-            { id: 'overview', label: '📊 Overview', count: null },
-            { id: 'hotels', label: '🏨 Stays & Hotels', count: totalHotelsCount },
-            { id: 'bhojan', label: '🍲 Bhojan & Food', count: totalBhojanCount },
-            { id: 'bookings', label: '📅 Pilgrim Bookings', count: totalBookingsCount + totalBhojanResCount },
-            { id: 'approvals', label: '⏳ Approvals Queue', count: pendingApprovalsCount },
-            { id: 'users', label: '👥 Users & Staff', count: totalUsersCount },
-            { id: 'payments', label: '💰 Revenue (10%)', count: `₹${ownerCommissionEarned}` },
-            { id: 'settings', label: '⚙️ Platform Settings', count: null },
-            { id: 'audit', label: '🛡️ Audit Logs', count: auditLogs.length }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as AdminTab)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${
-                activeTab === tab.id
-                  ? 'bg-amber-600 text-white shadow-md shadow-amber-900/30'
-                  : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60'
-              }`}
-            >
-              <span>{tab.label}</span>
-              {tab.count !== null && (
-                <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full ${
-                    activeTab === tab.id
-                      ? 'bg-amber-800/80 text-amber-100'
-                      : 'bg-stone-800 text-stone-400'
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          ))}
+      {/* ===================================================================== */}
+      {/* 1. LEFT SIDEBAR NAVIGATION                                            */}
+      {/* ===================================================================== */}
+      <aside className="w-64 bg-slate-900/90 border-r border-slate-800 flex flex-col shrink-0 select-none">
+        {/* Brand Header */}
+        <div className="p-6 border-b border-slate-800/80 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+              <Compass className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
+                Brijnidhi <span className="text-xs bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-semibold">RUST</span>
+              </h1>
+              <p className="text-xs text-slate-400">Tourism & Property Admin</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation Items */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+          <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            Core Management
+          </div>
+
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'overview'
+                ? 'bg-amber-500 text-slate-950 font-semibold shadow-md shadow-amber-500/20'
+                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+            }`}
+          >
+            <Activity className="w-4 h-4 shrink-0" />
+            <span>Dashboard</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('properties')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'properties'
+                ? 'bg-amber-500 text-slate-950 font-semibold shadow-md shadow-amber-500/20'
+                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+            }`}
+          >
+            <Building2 className="w-4 h-4 shrink-0" />
+            <span>All Properties</span>
+            <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">
+              {properties.length}
+            </span>
+          </button>
+
+          <div className="px-3 pt-4 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            Property Verticals
+          </div>
+
+          <button
+            onClick={() => {
+              setActiveTab('properties');
+              setPropertyFilterType('Hotel');
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition-colors"
+          >
+            <BedDouble className="w-4 h-4 text-sky-400" />
+            <span>Hotels</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('properties');
+              setPropertyFilterType('Restaurant');
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition-colors"
+          >
+            <Utensils className="w-4 h-4 text-emerald-400" />
+            <span>Restaurants & Bhojan</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('properties');
+              setPropertyFilterType('Ashram');
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition-colors"
+          >
+            <Heart className="w-4 h-4 text-rose-400" />
+            <span>Ashrams (Spiritual)</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('properties');
+              setPropertyFilterType('Dharamshala');
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition-colors"
+          >
+            <ShieldCheck className="w-4 h-4 text-amber-400" />
+            <span>Dharamshalas</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('transport')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'transport'
+                ? 'bg-amber-500 text-slate-950 font-semibold shadow-md shadow-amber-500/20'
+                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+            }`}
+          >
+            <Car className="w-4 h-4 shrink-0 text-cyan-400" />
+            <span>Transport & Drivers</span>
+          </button>
+
+          <div className="px-3 pt-4 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            Operations & Finance
+          </div>
+
+          <button
+            onClick={() => setActiveTab('bookings')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'bookings'
+                ? 'bg-amber-500 text-slate-950 font-semibold shadow-md shadow-amber-500/20'
+                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+            }`}
+          >
+            <CalendarCheck className="w-4 h-4 shrink-0" />
+            <span>Bookings</span>
+            <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">
+              {bookings.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('customers')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'customers'
+                ? 'bg-amber-500 text-slate-950 font-semibold shadow-md shadow-amber-500/20'
+                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+            }`}
+          >
+            <Users className="w-4 h-4 shrink-0" />
+            <span>Customers</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('payments')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'payments'
+                ? 'bg-amber-500 text-slate-950 font-semibold shadow-md shadow-amber-500/20'
+                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+            }`}
+          >
+            <IndianRupee className="w-4 h-4 shrink-0" />
+            <span>Payments & Ledger</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('reviews')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'reviews'
+                ? 'bg-amber-500 text-slate-950 font-semibold shadow-md shadow-amber-500/20'
+                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+            }`}
+          >
+            <Star className="w-4 h-4 shrink-0" />
+            <span>Reviews Moderation</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('offers')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'offers'
+                ? 'bg-amber-500 text-slate-950 font-semibold shadow-md shadow-amber-500/20'
+                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+            }`}
+          >
+            <Percent className="w-4 h-4 shrink-0" />
+            <span>Offers & Coupons</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('reports')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'reports'
+                ? 'bg-amber-500 text-slate-950 font-semibold shadow-md shadow-amber-500/20'
+                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+            }`}
+          >
+            <FileText className="w-4 h-4 shrink-0" />
+            <span>Reports & Exports</span>
+          </button>
+
+          <div className="px-3 pt-4 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            System & Security
+          </div>
+
+          <button
+            onClick={() => setActiveTab('audit')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'audit'
+                ? 'bg-amber-500 text-slate-950 font-semibold shadow-md shadow-amber-500/20'
+                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+            }`}
+          >
+            <ShieldAlert className="w-4 h-4 shrink-0 text-red-400" />
+            <span>Audit Logs</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'settings'
+                ? 'bg-amber-500 text-slate-950 font-semibold shadow-md shadow-amber-500/20'
+                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+            }`}
+          >
+            <Settings className="w-4 h-4 shrink-0" />
+            <span>Platform Settings</span>
+          </button>
         </nav>
-      </div>
 
-      {/* Main Content Area */}
-      <main className="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full space-y-6">
-        {/* ========================================================= */}
-        {/* TAB 1: OVERVIEW & MASTER COMMAND DASHBOARD */}
-        {/* ========================================================= */}
-        {activeTab === 'overview' && (
-          <div className="space-y-6">
-            {/* Owner Greeting Hero */}
-            <div className="bg-gradient-to-r from-stone-900 via-stone-900 to-amber-950/40 border border-amber-500/20 rounded-3xl p-6 relative overflow-hidden">
-              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <span className="text-amber-400 font-bold text-xs uppercase tracking-widest flex items-center gap-1.5 mb-1">
-                    <Sparkles className="w-3.5 h-3.5" /> Project Owner Live Console
-                  </span>
-                  <h2 className="text-2xl font-black font-serif text-white">
-                    Radhe Radhe, Girish Sharma 🙏
-                  </h2>
-                  <p className="text-xs text-stone-400 max-w-xl mt-1 leading-relaxed">
-                    You have full authority across Brijnidhi. Monitor real-time bookings across Vrindavan, Mathura, Barsana, and Govardhan, manage sacred food spots, approve stays, and oversee platform earnings.
-                  </p>
-                </div>
+        {/* Footer info */}
+        <div className="p-4 border-t border-slate-800 text-xs text-slate-400 bg-slate-950/60 flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-slate-200">Rust Core Active</p>
+            <p className="text-[11px] text-emerald-400">Port 5001 • Axum 0.7</p>
+          </div>
+          <Link
+            href="/"
+            className="text-amber-400 hover:underline flex items-center gap-1 text-[11px]"
+          >
+            View Site →
+          </Link>
+        </div>
+      </aside>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={() => setShowAddHotelModal(true)}
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-900/30 cursor-pointer"
-                  >
-                    <Plus className="w-4 h-4" /> Add Property
-                  </button>
-                  <button
-                    onClick={() => setShowAddBhojanModal(true)}
-                    className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-orange-900/30 cursor-pointer"
-                  >
-                    <Utensils className="w-4 h-4" /> Add Bhojanalaya
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('settings')}
-                    className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-stone-700 cursor-pointer"
-                  >
-                    <Megaphone className="w-4 h-4" /> Broadcast Notice
-                  </button>
-                </div>
-              </div>
+      {/* ===================================================================== */}
+      {/* 2. MAIN WORKSPACE CONTENT                                             */}
+      {/* ===================================================================== */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-slate-950">
+        {/* TOP NAVBAR */}
+        <header className="h-16 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-8 flex items-center justify-between sticky top-0 z-30">
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-bold text-white capitalize flex items-center gap-2">
+              {activeTab === 'overview' && 'Tourism Management Dashboard'}
+              {activeTab === 'properties' && 'Multi-Property Management'}
+              {activeTab === 'transport' && 'Vehicles & Driver Management'}
+              {activeTab === 'bookings' && 'Centralized Booking Ledger'}
+              {activeTab === 'customers' && 'Customer Profiles & History'}
+              {activeTab === 'payments' && 'Financial Ledger & Payouts'}
+              {activeTab === 'reviews' && 'Customer Review Moderation'}
+              {activeTab === 'offers' && 'Offers & Discount Coupons'}
+              {activeTab === 'reports' && 'Analytics & Export Reports'}
+              {activeTab === 'audit' && 'Security Audit Trail'}
+              {activeTab === 'settings' && 'Platform Governance'}
+            </h2>
+          </div>
+
+          {/* Quick Actions & Role Switcher */}
+          <div className="flex items-center gap-4">
+            {/* Role Badge Switcher */}
+            <div className="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60 text-xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-slate-400">Role:</span>
+              <select
+                value={currentRole}
+                onChange={(e) => setCurrentRole(e.target.value)}
+                className="bg-transparent text-amber-300 font-semibold focus:outline-none cursor-pointer"
+              >
+                <option value="SUPER_ADMIN" className="bg-slate-900 text-slate-100">Super Admin</option>
+                <option value="PROPERTY_MANAGER" className="bg-slate-900 text-slate-100">Property Manager</option>
+                <option value="BOOKING_MANAGER" className="bg-slate-900 text-slate-100">Booking Manager</option>
+                <option value="TRANSPORT_MANAGER" className="bg-slate-900 text-slate-100">Transport Manager</option>
+                <option value="ACCOUNTANT" className="bg-slate-900 text-slate-100">Accountant</option>
+              </select>
             </div>
 
-            {/* 8 Primary KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-stone-900/90 border border-stone-800 rounded-2xl p-4">
-                <div className="flex items-center justify-between text-stone-400 text-xs mb-1">
-                  <span>Properties Listed</span>
-                  <Building2 className="w-4 h-4 text-amber-500" />
-                </div>
-                <div className="text-2xl font-black text-white">{totalHotelsCount}</div>
-                <div className="text-[11px] text-emerald-400 mt-1">
-                  {activeHotelsCount} active • {pendingApprovalsCount} pending
-                </div>
-              </div>
+            {/* Refresh Button */}
+            <button
+              onClick={loadAllData}
+              disabled={refreshing}
+              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+              title="Refresh Data from Rust"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-amber-400' : ''}`} />
+            </button>
 
-              <div className="bg-stone-900/90 border border-stone-800 rounded-2xl p-4">
-                <div className="flex items-center justify-between text-stone-400 text-xs mb-1">
-                  <span>Bhojan Spots</span>
-                  <Utensils className="w-4 h-4 text-orange-500" />
-                </div>
-                <div className="text-2xl font-black text-white">{totalBhojanCount}</div>
-                <div className="text-[11px] text-emerald-400 mt-1">
-                  {activeBhojanCount} satvik kitchens live
-                </div>
-              </div>
+            {/* Add Property Button */}
+            <button
+              onClick={() => {
+                setShowAddPropertyModal(true);
+                setCurrentStep(1);
+              }}
+              className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-semibold px-4 py-2 rounded-lg text-sm shadow-md shadow-orange-500/20 hover:from-amber-400 hover:to-orange-400 transition-all"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>Add Property</span>
+            </button>
+          </div>
+        </header>
 
-              <div className="bg-stone-900/90 border border-stone-800 rounded-2xl p-4">
-                <div className="flex items-center justify-between text-stone-400 text-xs mb-1">
-                  <span>Stay Bookings</span>
-                  <CalendarCheck className="w-4 h-4 text-emerald-500" />
-                </div>
-                <div className="text-2xl font-black text-white">{totalBookingsCount}</div>
-                <div className="text-[11px] text-stone-400 mt-1">
-                  + {totalBhojanResCount} thali tokens
-                </div>
-              </div>
-
-              <div className="bg-stone-900/90 border border-stone-800 rounded-2xl p-4">
-                <div className="flex items-center justify-between text-stone-400 text-xs mb-1">
-                  <span>Owner Commission (10%)</span>
-                  <IndianRupee className="w-4 h-4 text-emerald-400" />
-                </div>
-                <div className="text-2xl font-black text-emerald-400">
-                  ₹{ownerCommissionEarned.toLocaleString()}
-                </div>
-                <div className="text-[11px] text-stone-400 mt-1">
-                  Gross: ₹{grossTurnover.toLocaleString()}
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Actions & Recent Activity Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left 2 Cols: Recent Bookings & Thali Reservations */}
-              <div className="lg:col-span-2 bg-stone-900/90 border border-stone-800 rounded-3xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="font-bold text-white text-base flex items-center gap-2">
-                      <CalendarCheck className="w-5 h-5 text-amber-500" />
-                      <span>Recent Pilgrim Bookings &amp; Orders</span>
-                    </h3>
-                    <p className="text-xs text-stone-400">Latest stay reservations and food orders across Braj</p>
+        {/* WORKSPACE BODY */}
+        <div className="p-8 space-y-8">
+          {/* =================================================================== */}
+          {/* TAB 1: OVERVIEW DASHBOARD                                           */}
+          {/* =================================================================== */}
+          {activeTab === 'overview' && (
+            <div className="space-y-8">
+              {/* 12 OVERVIEW KPI CARDS */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {/* 1. Total Properties */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between text-slate-400 mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider">Total Properties</span>
+                    <Building2 className="w-4 h-4 text-amber-400" />
                   </div>
+                  <div className="text-2xl font-bold text-white">{overviewData?.totalProperties ?? properties.length}</div>
+                  <div className="text-xs text-slate-500 mt-1">Hotels, Ashrams, Restaurants</div>
+                </div>
+
+                {/* 2. Active Hotels */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between text-slate-400 mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider">Active Hotels</span>
+                    <BedDouble className="w-4 h-4 text-sky-400" />
+                  </div>
+                  <div className="text-2xl font-bold text-sky-400">{overviewData?.activeHotels ?? 0}</div>
+                  <div className="text-xs text-slate-500 mt-1">Verified pilgrim stays</div>
+                </div>
+
+                {/* 3. Active Restaurants */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between text-slate-400 mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider">Active Restaurants</span>
+                    <Utensils className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="text-2xl font-bold text-emerald-400">{overviewData?.activeRestaurants ?? 0}</div>
+                  <div className="text-xs text-slate-500 mt-1">Satvik Bhojanalayas</div>
+                </div>
+
+                {/* 4. Active Ashrams */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between text-slate-400 mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider">Active Ashrams</span>
+                    <Heart className="w-4 h-4 text-rose-400" />
+                  </div>
+                  <div className="text-2xl font-bold text-rose-400">{overviewData?.activeAshrams ?? 0}</div>
+                  <div className="text-xs text-slate-500 mt-1">Spiritual accommodation</div>
+                </div>
+
+                {/* 5. Active Dharamshalas */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between text-slate-400 mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider">Dharamshalas</span>
+                    <ShieldCheck className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="text-2xl font-bold text-amber-400">{overviewData?.activeDharamshalas ?? 0}</div>
+                  <div className="text-xs text-slate-500 mt-1">Community pilgrim homes</div>
+                </div>
+
+                {/* 6. Available Vehicles */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between text-slate-400 mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider">Available Vehicles</span>
+                    <Car className="w-4 h-4 text-cyan-400" />
+                  </div>
+                  <div className="text-2xl font-bold text-cyan-400">{overviewData?.availableVehicles ?? vehicles.length}</div>
+                  <div className="text-xs text-slate-500 mt-1">E-Rickshaws, Cabs & Vans</div>
+                </div>
+
+                {/* 7. Total Bookings */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between text-slate-400 mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider">Total Bookings</span>
+                    <CalendarCheck className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <div className="text-2xl font-bold text-white">{overviewData?.totalBookings ?? bookings.length}</div>
+                  <div className="text-xs text-slate-500 mt-1">Lifetime platform volume</div>
+                </div>
+
+                {/* 8. Today's Bookings */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between text-slate-400 mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider">Today's Bookings</span>
+                    <Clock className="w-4 h-4 text-teal-400" />
+                  </div>
+                  <div className="text-2xl font-bold text-teal-400">{overviewData?.todayBookings ?? 0}</div>
+                  <div className="text-xs text-slate-500 mt-1">Created today</div>
+                </div>
+
+                {/* 9. Pending Bookings */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between text-slate-400 mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider">Pending Bookings</span>
+                    <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                  </div>
+                  <div className="text-2xl font-bold text-yellow-400">{overviewData?.pendingBookings ?? 0}</div>
+                  <div className="text-xs text-slate-500 mt-1">Awaiting confirmation</div>
+                </div>
+
+                {/* 10. Cancelled Bookings */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between text-slate-400 mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider">Cancelled Bookings</span>
+                    <XCircle className="w-4 h-4 text-red-400" />
+                  </div>
+                  <div className="text-2xl font-bold text-red-400">{overviewData?.cancelledBookings ?? 0}</div>
+                  <div className="text-xs text-slate-500 mt-1">Rate: {overviewData?.cancellationRate ?? 0}%</div>
+                </div>
+
+                {/* 11. Total Revenue */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between text-slate-400 mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider">Total Revenue</span>
+                    <IndianRupee className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="text-2xl font-bold text-emerald-400">
+                    ₹{(overviewData?.totalRevenue ?? 0).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">Confirmed transactions</div>
+                </div>
+
+                {/* 12. Monthly Revenue */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between text-slate-400 mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider">Monthly Revenue</span>
+                    <TrendingUp className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="text-2xl font-bold text-amber-400">
+                    ₹{(overviewData?.monthlyRevenue ?? 0).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">Platform commission: {overviewData?.commissionRatePct ?? 10}%</div>
+                </div>
+              </div>
+
+              {/* DASHBOARD CHARTS ROW */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 1. Property Type Distribution */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6">
+                  <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                    <Compass className="w-4 h-4 text-amber-400" />
+                    Property Type Distribution
+                  </h3>
+                  <div className="space-y-4">
+                    {[
+                      { type: 'Hotels', count: overviewData?.activeHotels ?? 0, color: 'bg-sky-500' },
+                      { type: 'Restaurants & Bhojan', count: overviewData?.activeRestaurants ?? 0, color: 'bg-emerald-500' },
+                      { type: 'Ashrams', count: overviewData?.activeAshrams ?? 0, color: 'bg-rose-500' },
+                      { type: 'Dharamshalas', count: overviewData?.activeDharamshalas ?? 0, color: 'bg-amber-500' },
+                      { type: 'Transport (Vehicles)', count: vehicles.length, color: 'bg-cyan-500' }
+                    ].map((item, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex justify-between text-xs font-medium">
+                          <span className="text-slate-300">{item.type}</span>
+                          <span className="text-slate-400">{item.count} Active</span>
+                        </div>
+                        <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${item.color} rounded-full`}
+                            style={{
+                              width: `${Math.max(5, (item.count / Math.max(1, properties.length + vehicles.length)) * 100)}%`
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Monthly Occupancy Rate */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6">
+                  <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-teal-400" />
+                    Monthly Stay Occupancy Rate (%)
+                  </h3>
+                  <div className="grid grid-cols-6 gap-2 items-end h-44 pt-6">
+                    {(overviewData?.monthlyOccupancy || [
+                      { month: 'May', rate: 68 },
+                      { month: 'Jun', rate: 72 },
+                      { month: 'Jul', rate: 78 },
+                      { month: 'Aug', rate: 85 },
+                      { month: 'Sep', rate: 82 },
+                      { month: 'Oct', rate: 89 }
+                    ]).map((pt: any, i: number) => (
+                      <div key={i} className="flex flex-col items-center gap-2">
+                        <span className="text-[11px] font-semibold text-slate-300">{pt.rate}%</span>
+                        <div
+                          className="w-full bg-gradient-to-t from-teal-600 to-teal-400 rounded-t-md transition-all hover:opacity-90"
+                          style={{ height: `${(pt.rate / 100) * 110}px` }}
+                        />
+                        <span className="text-xs text-slate-400">{pt.month}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* RECENT BOOKINGS TABLE */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden">
+                <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <CalendarCheck className="w-4 h-4 text-amber-400" />
+                    Recent Tourism Bookings
+                  </h3>
                   <button
                     onClick={() => setActiveTab('bookings')}
-                    className="text-xs text-amber-400 hover:underline cursor-pointer"
+                    className="text-xs text-amber-400 hover:underline flex items-center gap-1"
                   >
-                    View All →
+                    View All Bookings ({bookings.length}) →
                   </button>
                 </div>
-
-                {bookings.length === 0 && bhojanReservations.length === 0 ? (
-                  <div className="text-center py-10 text-stone-500 text-xs">
-                    No active bookings yet. Yatris booking via public pages will automatically reflect here.
+                {bookings.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-sm">
+                    No bookings logged yet. Real bookings will display dynamically as pilgrims reserve stays.
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {bookings.slice(0, 4).map((b) => (
-                      <div
-                        key={b.id}
-                        className="p-3.5 bg-stone-950/60 border border-stone-800 rounded-2xl flex items-center justify-between text-xs"
-                      >
-                        <div>
-                          <div className="font-bold text-white">{b.hotelName}</div>
-                          <div className="text-stone-400 text-[11px]">
-                            {b.guestName} • 📞 {b.guestPhone} • {b.totalNights} Night(s)
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-bold text-emerald-400">₹{b.grandTotal}</div>
-                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">
-                            {b.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                    {bhojanReservations.slice(0, 2).map((r) => (
-                      <div
-                        key={r.id}
-                        className="p-3.5 bg-stone-950/60 border border-orange-950/50 rounded-2xl flex items-center justify-between text-xs"
-                      >
-                        <div>
-                          <div className="font-bold text-orange-300 flex items-center gap-1.5">
-                            <Utensils className="w-3.5 h-3.5" /> {r.bhojanalayaName}
-                          </div>
-                          <div className="text-stone-400 text-[11px]">
-                            {r.guestName} • {r.thaliCount} Satvik Thali(s) • {r.mealTime}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-950 text-orange-300 border border-orange-800">
-                            {r.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-300">
+                      <thead className="bg-slate-950/60 text-xs uppercase text-slate-400 border-b border-slate-800">
+                        <tr>
+                          <th className="py-3 px-4">Booking ID</th>
+                          <th className="py-3 px-4">Customer</th>
+                          <th className="py-3 px-4">Service</th>
+                          <th className="py-3 px-4">Property</th>
+                          <th className="py-3 px-4">Amount</th>
+                          <th className="py-3 px-4">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {bookings.slice(0, 5).map((b) => (
+                          <tr key={b.id} className="hover:bg-slate-800/30">
+                            <td className="py-3 px-4 font-mono text-xs text-slate-400">{b.id}</td>
+                            <td className="py-3 px-4 font-medium text-white">{b.customerName || b.guestName}</td>
+                            <td className="py-3 px-4">
+                              <span className="px-2 py-0.5 rounded text-xs bg-slate-800 text-slate-300 font-medium">
+                                {b.serviceType}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-slate-300">{b.propertyName || b.hotelName}</td>
+                            <td className="py-3 px-4 font-semibold text-emerald-400">
+                              ₹{(b.amount || b.grandTotal || 0).toLocaleString()}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                b.status === 'Confirmed' || b.status === 'CONFIRMED'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  : b.status === 'Pending'
+                                  ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                                  : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                              }`}>
+                                {b.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
+            </div>
+          )}
 
-              {/* Right Col: Active Notice Preview & Security Audit */}
-              <div className="space-y-6">
-                <div className="bg-stone-900/90 border border-stone-800 rounded-3xl p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                      <Megaphone className="w-4 h-4 text-amber-500" />
-                      <span>Live Sacred Notice</span>
-                    </h3>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        settings.sacredNoticeEnabled
-                          ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                          : 'bg-stone-800 text-stone-500'
-                      }`}
-                    >
-                      {settings.sacredNoticeEnabled ? 'Active' : 'Disabled'}
-                    </span>
+          {/* =================================================================== */}
+          {/* TAB 2: PROPERTIES MANAGEMENT                                        */}
+          {/* =================================================================== */}
+          {activeTab === 'properties' && (
+            <div className="space-y-6">
+              {/* FILTERS & SEARCH BAR */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[300px]">
+                  {/* Search */}
+                  <div className="relative flex-1 min-w-[220px]">
+                    <Search className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
+                    <input
+                      type="text"
+                      placeholder="Search property name, city, owner..."
+                      value={propertySearch}
+                      onChange={(e) => setPropertySearch(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                    />
                   </div>
-                  <p className="text-xs text-stone-300 italic bg-stone-950 p-3 rounded-xl border border-stone-800">
-                    &ldquo;{settings.sacredNoticeText}&rdquo;
-                  </p>
-                  <button
-                    onClick={() => setActiveTab('settings')}
-                    className="w-full mt-3 py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-xl transition cursor-pointer"
+
+                  {/* Property Type Filter */}
+                  <select
+                    value={propertyFilterType}
+                    onChange={(e) => setPropertyFilterType(e.target.value)}
+                    className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-amber-500"
                   >
-                    Update Notice
+                    <option value="all">All Property Types</option>
+                    <option value="Hotel">Hotel</option>
+                    <option value="Restaurant">Restaurant / Bhojan</option>
+                    <option value="Ashram">Ashram (Spiritual)</option>
+                    <option value="Dharamshala">Dharamshala</option>
+                    <option value="Transport">Transport / Rickshaw</option>
+                  </select>
+
+                  {/* Status Filter */}
+                  <select
+                    value={propertyFilterStatus}
+                    onChange={(e) => setPropertyFilterStatus(e.target.value)}
+                    className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="PENDING">Pending Review</option>
+                    <option value="INACTIVE">Inactive</option>
+                    <option value="REJECTED">Rejected</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-slate-400">
+                    Showing <strong className="text-white">{filteredProperties.length}</strong> properties
+                  </span>
+                  <button
+                    onClick={() => {
+                      setShowAddPropertyModal(true);
+                      setCurrentStep(1);
+                    }}
+                    className="flex items-center gap-2 bg-amber-500 text-slate-950 px-3.5 py-2 rounded-lg font-semibold text-xs hover:bg-amber-400 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add New Property</span>
                   </button>
                 </div>
+              </div>
 
-                <div className="bg-stone-900/90 border border-stone-800 rounded-3xl p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                      <ShieldAlert className="w-4 h-4 text-amber-500" />
-                      <span>Recent Audit Trail</span>
-                    </h3>
+              {/* PROPERTIES DATA TABLE */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden">
+                {filteredProperties.length === 0 ? (
+                  <div className="p-12 text-center space-y-4">
+                    <div className="w-12 h-12 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+                      <Building2 className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-bold text-white">No properties match your filter</h4>
+                      <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+                        Try adjusting search terms or click "Add New Property" to add a Hotel, Ashram, Restaurant, Dharamshala, or Vehicle to the platform.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-300">
+                      <thead className="bg-slate-950/60 text-xs uppercase text-slate-400 border-b border-slate-800">
+                        <tr>
+                          <th className="py-3 px-4">Property</th>
+                          <th className="py-3 px-4">Type</th>
+                          <th className="py-3 px-4">Location</th>
+                          <th className="py-3 px-4">Contact</th>
+                          <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4">Rating</th>
+                          <th className="py-3 px-4">Bookings</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {filteredProperties.map((p) => (
+                          <tr key={p.id} className="hover:bg-slate-800/30 transition-colors">
+                            {/* Property Details */}
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-3">
+                                {p.mainImage ? (
+                                  <img
+                                    src={p.mainImage}
+                                    alt={p.name}
+                                    className="w-10 h-10 rounded-lg object-cover border border-slate-700"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 font-bold">
+                                    {p.name.charAt(0)}
+                                  </div>
+                                )}
+                                <div>
+                                  <div className="font-semibold text-white">{p.name}</div>
+                                  <div className="text-xs text-slate-500 font-mono">ID: {p.id}</div>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Type */}
+                            <td className="py-3.5 px-4">
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                p.propertyType === 'Hotel'
+                                  ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                                  : p.propertyType === 'Restaurant'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  : p.propertyType === 'Ashram'
+                                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                  : p.propertyType === 'Dharamshala'
+                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                  : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                              }`}>
+                                {p.propertyType}
+                              </span>
+                            </td>
+
+                            {/* Location */}
+                            <td className="py-3.5 px-4 text-xs text-slate-300">
+                              <div className="flex items-center gap-1 font-medium">
+                                <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                                {p.city || 'Vrindavan'}
+                              </div>
+                              {p.nearbyLandmark && (
+                                <div className="text-[11px] text-slate-500 truncate max-w-[160px]">
+                                  Near {p.nearbyLandmark}
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Contact */}
+                            <td className="py-3.5 px-4 text-xs">
+                              <div className="text-slate-300 font-medium">{p.ownerName}</div>
+                              <div className="text-slate-500">{p.contactNumber}</div>
+                            </td>
+
+                            {/* Status */}
+                            <td className="py-3.5 px-4">
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                p.status === 'ACTIVE'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  : p.status === 'PENDING' || p.status === 'UNDER_REVIEW'
+                                  ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                                  : p.status === 'REJECTED'
+                                  ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                                  : 'bg-slate-700 text-slate-300'
+                              }`}>
+                                {p.status}
+                              </span>
+                            </td>
+
+                            {/* Rating */}
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-1 text-xs font-semibold text-amber-400">
+                                <Star className="w-3.5 h-3.5 fill-amber-400" />
+                                {p.rating || 5.0}
+                              </div>
+                            </td>
+
+                            {/* Bookings */}
+                            <td className="py-3.5 px-4 text-xs font-mono font-medium text-slate-300">
+                              {p.totalBookings || 0}
+                            </td>
+
+                            {/* Action Buttons */}
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {/* Toggle Status */}
+                                <button
+                                  onClick={() => handleToggleStatus(p.id)}
+                                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                                  title="Toggle Active/Inactive"
+                                >
+                                  {p.status === 'ACTIVE' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <X className="w-3.5 h-3.5 text-slate-500" />}
+                                </button>
+
+                                {/* Approve (if pending) */}
+                                {(p.status === 'PENDING' || p.status === 'UNDER_REVIEW') && (
+                                  <button
+                                    onClick={() => handleApprove(p.id)}
+                                    className="p-1.5 rounded-lg bg-emerald-950/60 border border-emerald-700 hover:bg-emerald-900 text-emerald-300 transition-colors"
+                                    title="Approve Property"
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+
+                                {/* Reject (if pending) */}
+                                {(p.status === 'PENDING' || p.status === 'UNDER_REVIEW') && (
+                                  <button
+                                    onClick={() => setPropertyToReject(p)}
+                                    className="p-1.5 rounded-lg bg-rose-950/60 border border-rose-700 hover:bg-rose-900 text-rose-300 transition-colors"
+                                    title="Reject Property"
+                                  >
+                                    <XCircle className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+
+                                {/* Delete */}
+                                <button
+                                  onClick={() => handleDeleteProperty(p.id)}
+                                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-950 hover:text-red-400 text-slate-400 transition-colors"
+                                  title="Delete Property"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* =================================================================== */}
+          {/* TAB 3: TRANSPORT & DRIVERS                                          */}
+          {/* =================================================================== */}
+          {activeTab === 'transport' && (
+            <div className="space-y-8">
+              {/* Top Action Bar */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Car className="w-5 h-5 text-cyan-400" />
+                    Transport Fleet & Driver Operations
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Manage E-Rickshaws, Cabs, Tempo Travellers, and Pilgrim Transport Drivers
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddDriverModal(true)}
+                  className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold px-4 py-2 rounded-lg text-xs transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Register New Driver</span>
+                </button>
+              </div>
+
+              {/* Drivers Table */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden">
+                <div className="p-4 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-white">Registered Drivers Directory ({drivers.length})</h4>
+                </div>
+                {drivers.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-sm">
+                    No drivers registered yet. Click "Register New Driver" to add an E-Rickshaw or Cab driver.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-300">
+                      <thead className="bg-slate-950 text-xs uppercase text-slate-400 border-b border-slate-800">
+                        <tr>
+                          <th className="py-3 px-4">Driver Name</th>
+                          <th className="py-3 px-4">Phone</th>
+                          <th className="py-3 px-4">License Number</th>
+                          <th className="py-3 px-4">Experience</th>
+                          <th className="py-3 px-4">Assigned Vehicle</th>
+                          <th className="py-3 px-4">Rating</th>
+                          <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {drivers.map((drv) => (
+                          <tr key={drv.id} className="hover:bg-slate-800/30">
+                            <td className="py-3 px-4 font-semibold text-white">{drv.name}</td>
+                            <td className="py-3 px-4 text-slate-300">{drv.phone}</td>
+                            <td className="py-3 px-4 font-mono text-xs text-slate-400">{drv.licenseNumber}</td>
+                            <td className="py-3 px-4">{drv.experienceYears} Years</td>
+                            <td className="py-3 px-4 text-cyan-400 font-mono text-xs">
+                              {drv.assignedVehicle || 'Unassigned'}
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-amber-400">★ {drv.rating}</td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                                drv.status === 'Active'
+                                  ? 'bg-emerald-500/20 text-emerald-300'
+                                  : 'bg-red-500/20 text-red-300'
+                              }`}>
+                                {drv.status}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <button
+                                onClick={async () => {
+                                  await toggleStatusAdminDriver(drv.id);
+                                  showToast('Driver status toggled');
+                                  loadAllData();
+                                }}
+                                className="text-xs text-amber-400 hover:underline mr-3"
+                              >
+                                Toggle
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (confirm('Delete this driver?')) {
+                                    await deleteAdminDriver(drv.id);
+                                    showToast('Driver deleted');
+                                    loadAllData();
+                                  }
+                                }}
+                                className="text-xs text-red-400 hover:underline"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* =================================================================== */}
+          {/* TAB 4: BOOKINGS MANAGEMENT                                          */}
+          {/* =================================================================== */}
+          {activeTab === 'bookings' && (
+            <div className="space-y-6">
+              {/* Filter bar */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-3 flex-1">
+                  <div className="relative flex-1 min-w-[200px]">
+                    <Search className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
+                    <input
+                      type="text"
+                      placeholder="Search booking ID, customer name, property..."
+                      value={bookingSearch}
+                      onChange={(e) => setBookingSearch(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <select
+                    value={bookingFilterService}
+                    onChange={(e) => setBookingFilterService(e.target.value)}
+                    className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="all">All Services</option>
+                    <option value="Hotel">Hotel</option>
+                    <option value="Restaurant">Restaurant</option>
+                    <option value="Ashram">Ashram</option>
+                    <option value="Dharamshala">Dharamshala</option>
+                    <option value="Transport">Transport</option>
+                  </select>
+
+                  <select
+                    value={bookingFilterStatus}
+                    onChange={(e) => setBookingFilterStatus(e.target.value)}
+                    className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="Confirmed">Confirmed</option>
+                    <option value="Checked-In">Checked-In</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+                <button
+                  onClick={() => handleExportCSV('Bookings', filteredBookings)}
+                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-lg text-xs font-semibold"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Export CSV</span>
+                </button>
+              </div>
+
+              {/* Bookings Table */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden">
+                {filteredBookings.length === 0 ? (
+                  <div className="p-12 text-center text-slate-500 text-sm">
+                    No bookings found matching the selected filter criteria.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-300">
+                      <thead className="bg-slate-950 text-xs uppercase text-slate-400 border-b border-slate-800">
+                        <tr>
+                          <th className="py-3 px-4">Booking ID</th>
+                          <th className="py-3 px-4">Customer</th>
+                          <th className="py-3 px-4">Service</th>
+                          <th className="py-3 px-4">Property</th>
+                          <th className="py-3 px-4">Check-in / Date</th>
+                          <th className="py-3 px-4">Amount</th>
+                          <th className="py-3 px-4">Payment</th>
+                          <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {filteredBookings.map((b) => (
+                          <tr key={b.id} className="hover:bg-slate-800/30">
+                            <td className="py-3 px-4 font-mono text-xs text-slate-400">{b.id}</td>
+                            <td className="py-3 px-4">
+                              <div className="font-semibold text-white">{b.customerName || b.guestName}</div>
+                              <div className="text-xs text-slate-500">{b.customerPhone || b.guestPhone}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="px-2 py-0.5 rounded text-xs bg-slate-800 text-slate-300 font-medium">
+                                {b.serviceType}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-slate-300 font-medium">
+                              {b.propertyName || b.hotelName}
+                            </td>
+                            <td className="py-3 px-4 text-xs text-slate-400">
+                              <div>In: {b.checkIn}</div>
+                              <div>Out: {b.checkOut}</div>
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-emerald-400">
+                              ₹{(b.amount || b.grandTotal || 0).toLocaleString()}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                                b.paymentStatus === 'Paid'
+                                  ? 'bg-emerald-500/20 text-emerald-300'
+                                  : 'bg-yellow-500/20 text-yellow-300'
+                              }`}>
+                                {b.paymentStatus || 'Paid'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <select
+                                value={b.status}
+                                onChange={async (e) => {
+                                  await updateAdminBookingStatus(b.id, e.target.value);
+                                  showToast(`Booking status changed to ${e.target.value}`);
+                                  loadAllData();
+                                }}
+                                className="bg-slate-950 border border-slate-800 text-xs rounded px-2 py-1 text-slate-200 focus:outline-none focus:border-amber-500"
+                              >
+                                <option value="Pending">Pending</option>
+                                <option value="Confirmed">Confirmed</option>
+                                <option value="Checked-In">Checked-In</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Cancelled">Cancelled</option>
+                              </select>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <button
+                                onClick={async () => {
+                                  if (confirm('Cancel / delete this booking?')) {
+                                    await deleteAdminBooking(b.id);
+                                    showToast('Booking deleted');
+                                    loadAllData();
+                                  }
+                                }}
+                                className="text-xs text-red-400 hover:underline"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* =================================================================== */}
+          {/* TAB 5: CUSTOMERS MANAGEMENT                                         */}
+          {/* =================================================================== */}
+          {activeTab === 'customers' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Users className="w-5 h-5 text-indigo-400" />
+                    Pilgrims & Customer Directory
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Manage customer profiles, booking history, and pilgrim accounts
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddCustomerModal(true)}
+                  className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2 rounded-lg text-xs"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Customer</span>
+                </button>
+              </div>
+
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden">
+                {customers.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-sm">
+                    No registered customers yet.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-300">
+                      <thead className="bg-slate-950 text-xs uppercase text-slate-400 border-b border-slate-800">
+                        <tr>
+                          <th className="py-3 px-4">Customer ID</th>
+                          <th className="py-3 px-4">Name</th>
+                          <th className="py-3 px-4">Contact</th>
+                          <th className="py-3 px-4">Total Bookings</th>
+                          <th className="py-3 px-4">Total Spending</th>
+                          <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {customers.map((c) => (
+                          <tr key={c.id} className="hover:bg-slate-800/30">
+                            <td className="py-3 px-4 font-mono text-xs text-slate-400">{c.id}</td>
+                            <td className="py-3 px-4 font-semibold text-white">{c.name}</td>
+                            <td className="py-3 px-4 text-xs">
+                              <div>{c.phone}</div>
+                              <div className="text-slate-500">{c.email}</div>
+                            </td>
+                            <td className="py-3 px-4 font-mono">{c.totalBookings}</td>
+                            <td className="py-3 px-4 font-semibold text-emerald-400">
+                              ₹{(c.totalSpending || 0).toLocaleString()}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="px-2 py-0.5 rounded text-xs bg-emerald-500/20 text-emerald-300 font-semibold">
+                                {c.accountStatus}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <button
+                                onClick={async () => {
+                                  if (confirm('Delete customer?')) {
+                                    await deleteAdminCustomer(c.id);
+                                    showToast('Customer deleted');
+                                    loadAllData();
+                                  }
+                                }}
+                                className="text-xs text-red-400 hover:underline"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* =================================================================== */}
+          {/* TAB 6: PAYMENTS & FINANCIAL LEDGER                                  */}
+          {/* =================================================================== */}
+          {activeTab === 'payments' && (
+            <div className="space-y-6">
+              {/* Financial KPI Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5">
+                  <div className="text-xs font-semibold uppercase text-slate-400 mb-1">Total Gross Volume</div>
+                  <div className="text-2xl font-bold text-white">
+                    ₹{(paymentOverview?.totalGrossBookings ?? 0).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">Processed transactions</div>
+                </div>
+
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5">
+                  <div className="text-xs font-semibold uppercase text-slate-400 mb-1">Platform Commission</div>
+                  <div className="text-2xl font-bold text-emerald-400">
+                    ₹{(paymentOverview?.platformCommissions ?? 0).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">Platform earnings ({paymentOverview?.commissionRatePct ?? 10}%)</div>
+                </div>
+
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5">
+                  <div className="text-xs font-semibold uppercase text-slate-400 mb-1">Vendor Payouts</div>
+                  <div className="text-2xl font-bold text-sky-400">
+                    ₹{(paymentOverview?.payoutsToHotels ?? 0).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">Due to stay partners</div>
+                </div>
+
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5">
+                  <div className="text-xs font-semibold uppercase text-slate-400 mb-1">Pending Payouts</div>
+                  <div className="text-2xl font-bold text-yellow-400">
+                    ₹{(paymentOverview?.pendingPayouts ?? 0).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">Scheduled for next cycle</div>
+                </div>
+              </div>
+
+              {/* Transactions Ledger Table */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden">
+                <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-white">Payment Transactions Ledger</h4>
+                  <button
+                    onClick={() => handleExportCSV('Payment_Transactions', paymentOverview?.payments || [])}
+                    className="text-xs text-amber-400 hover:underline flex items-center gap-1"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Export Ledger CSV
+                  </button>
+                </div>
+                {!paymentOverview?.payments || paymentOverview.payments.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-sm">
+                    No payment records logged yet.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-300">
+                      <thead className="bg-slate-950 text-xs uppercase text-slate-400 border-b border-slate-800">
+                        <tr>
+                          <th className="py-3 px-4">Payment ID</th>
+                          <th className="py-3 px-4">Booking ID</th>
+                          <th className="py-3 px-4">Customer</th>
+                          <th className="py-3 px-4">Method</th>
+                          <th className="py-3 px-4">Amount</th>
+                          <th className="py-3 px-4">Payment Status</th>
+                          <th className="py-3 px-4">Date</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {paymentOverview.payments.map((p: any) => (
+                          <tr key={p.id} className="hover:bg-slate-800/30">
+                            <td className="py-3 px-4 font-mono text-xs text-slate-400">{p.id}</td>
+                            <td className="py-3 px-4 font-mono text-xs text-slate-400">{p.bookingId}</td>
+                            <td className="py-3 px-4 font-medium text-white">{p.customer}</td>
+                            <td className="py-3 px-4 text-xs text-slate-300">{p.paymentMethod}</td>
+                            <td className="py-3 px-4 font-semibold text-emerald-400">
+                              ₹{(p.amount || 0).toLocaleString()}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="px-2 py-0.5 rounded text-xs bg-emerald-500/20 text-emerald-300 font-semibold">
+                                {p.paymentStatus}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-xs text-slate-400">{p.paymentDate}</td>
+                            <td className="py-3 px-4 text-right">
+                              <button
+                                onClick={async () => {
+                                  if (confirm(`Process refund for payment ${p.id}?`)) {
+                                    await refundAdminPayment(p.id, 'Admin issued refund');
+                                    showToast('Refund processed successfully');
+                                    loadAllData();
+                                  }
+                                }}
+                                className="text-xs text-yellow-400 hover:underline"
+                              >
+                                Refund
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* =================================================================== */}
+          {/* TAB 7: REVIEWS MODERATION                                           */}
+          {/* =================================================================== */}
+          {activeTab === 'reviews' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Star className="w-5 h-5 text-amber-400" />
+                    Customer Reviews Moderation
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Approve, flag, hide, or remove pilgrim feedback across hotels and services
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden">
+                {reviews.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-sm">
+                    No reviews pending moderation.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-300">
+                      <thead className="bg-slate-950 text-xs uppercase text-slate-400 border-b border-slate-800">
+                        <tr>
+                          <th className="py-3 px-4">Customer</th>
+                          <th className="py-3 px-4">Property</th>
+                          <th className="py-3 px-4">Rating</th>
+                          <th className="py-3 px-4">Review Content</th>
+                          <th className="py-3 px-4">Date</th>
+                          <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {reviews.map((r) => (
+                          <tr key={r.id} className="hover:bg-slate-800/30">
+                            <td className="py-3 px-4 font-semibold text-white">{r.customer}</td>
+                            <td className="py-3 px-4 text-slate-300">{r.propertyName}</td>
+                            <td className="py-3 px-4 font-semibold text-amber-400">★ {r.rating}</td>
+                            <td className="py-3 px-4 max-w-sm text-xs text-slate-300 truncate">{r.review}</td>
+                            <td className="py-3 px-4 text-xs text-slate-500">{r.date}</td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                                r.status === 'Approved'
+                                  ? 'bg-emerald-500/20 text-emerald-300'
+                                  : r.status === 'Flagged'
+                                  ? 'bg-red-500/20 text-red-300'
+                                  : 'bg-yellow-500/20 text-yellow-300'
+                              }`}>
+                                {r.status}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right space-x-2">
+                              <button
+                                onClick={async () => {
+                                  await updateAdminReviewStatus(r.id, 'Approved');
+                                  showToast('Review approved');
+                                  loadAllData();
+                                }}
+                                className="text-xs text-emerald-400 hover:underline"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  await updateAdminReviewStatus(r.id, 'Hidden');
+                                  showToast('Review hidden');
+                                  loadAllData();
+                                }}
+                                className="text-xs text-yellow-400 hover:underline"
+                              >
+                                Hide
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  await deleteAdminReview(r.id);
+                                  showToast('Review deleted');
+                                  loadAllData();
+                                }}
+                                className="text-xs text-red-400 hover:underline"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* =================================================================== */}
+          {/* TAB 8: OFFERS & COUPONS                                             */}
+          {/* =================================================================== */}
+          {activeTab === 'offers' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Percent className="w-5 h-5 text-amber-400" />
+                    Offers & Discount Coupons
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Manage seasonal discounts, promo codes, and transport coupons
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddCouponModal(true)}
+                  className="flex items-center gap-2 bg-amber-500 text-slate-950 px-4 py-2 rounded-lg text-xs font-semibold hover:bg-amber-400"
+                >
+                  <Plus className="w-4 h-4 stroke-[3]" />
+                  <span>Create Promo Coupon</span>
+                </button>
+              </div>
+
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden">
+                {coupons.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-sm">
+                    No active discount coupons. Click "Create Promo Coupon" to configure one.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-300">
+                      <thead className="bg-slate-950 text-xs uppercase text-slate-400 border-b border-slate-800">
+                        <tr>
+                          <th className="py-3 px-4">Coupon Code</th>
+                          <th className="py-3 px-4">Type</th>
+                          <th className="py-3 px-4">Discount</th>
+                          <th className="py-3 px-4">Min Amount</th>
+                          <th className="py-3 px-4">Validity</th>
+                          <th className="py-3 px-4">Usage</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {coupons.map((c) => (
+                          <tr key={c.id} className="hover:bg-slate-800/30">
+                            <td className="py-3 px-4 font-mono font-bold text-amber-400">{c.couponCode}</td>
+                            <td className="py-3 px-4">{c.discountType}</td>
+                            <td className="py-3 px-4 font-semibold text-emerald-400">
+                              {c.discountType === 'Percentage' ? `${c.discountValue}%` : `₹${c.discountValue}`}
+                            </td>
+                            <td className="py-3 px-4 text-xs font-mono">₹{c.minBookingAmount}</td>
+                            <td className="py-3 px-4 text-xs text-slate-400">{c.startDate} to {c.endDate}</td>
+                            <td className="py-3 px-4 text-xs font-mono">{c.usageCount} / {c.usageLimit}</td>
+                            <td className="py-3 px-4 text-right">
+                              <button
+                                onClick={async () => {
+                                  if (confirm('Delete coupon?')) {
+                                    await deleteAdminCoupon(c.id);
+                                    showToast('Coupon deleted');
+                                    loadAllData();
+                                  }
+                                }}
+                                className="text-xs text-red-400 hover:underline"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* =================================================================== */}
+          {/* TAB 9: REPORTS & EXPORTS                                            */}
+          {/* =================================================================== */}
+          {activeTab === 'reports' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-amber-400" />
+                    Analytics & Export Reports
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Download official tourism reports in CSV / Excel format
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Property Report */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-white flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-sky-400" />
+                      Property & Stays Report
+                    </h4>
                     <button
-                      onClick={() => setActiveTab('audit')}
-                      className="text-xs text-amber-400 hover:underline cursor-pointer"
+                      onClick={() => handleExportCSV('Properties_Report', properties)}
+                      className="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg text-slate-200 font-semibold flex items-center gap-1.5"
                     >
-                      All →
+                      <Download className="w-3.5 h-3.5" /> CSV
                     </button>
                   </div>
-                  <div className="space-y-2.5">
-                    {auditLogs.slice(0, 3).map((log) => (
-                      <div key={log.id} className="text-xs border-b border-stone-800 pb-2">
-                        <div className="text-stone-300 font-medium truncate">{log.details}</div>
-                        <div className="text-[10px] text-stone-500 flex justify-between mt-0.5">
-                          <span>{log.adminName}</span>
-                          <span>{log.timestamp}</span>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="text-xs text-slate-400 space-y-1">
+                    <p>Total Registered Properties: <strong>{properties.length}</strong></p>
+                    <p>Active Verified Hotels: <strong>{overviewData?.activeHotels ?? 0}</strong></p>
+                    <p>Active Restaurants: <strong>{overviewData?.activeRestaurants ?? 0}</strong></p>
+                    <p>Ashrams & Dharamshalas: <strong>{(overviewData?.activeAshrams ?? 0) + (overviewData?.activeDharamshalas ?? 0)}</strong></p>
+                  </div>
+                </div>
+
+                {/* Revenue Report */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-white flex items-center gap-2">
+                      <IndianRupee className="w-4 h-4 text-emerald-400" />
+                      Revenue & Earnings Report
+                    </h4>
+                    <button
+                      onClick={() => handleExportCSV('Revenue_Report', paymentOverview?.payments || [])}
+                      className="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg text-slate-200 font-semibold flex items-center gap-1.5"
+                    >
+                      <Download className="w-3.5 h-3.5" /> CSV
+                    </button>
+                  </div>
+                  <div className="text-xs text-slate-400 space-y-1">
+                    <p>Gross Volume: <strong>₹{(overviewData?.totalRevenue ?? 0).toLocaleString()}</strong></p>
+                    <p>Platform Commission: <strong>₹{(overviewData?.platformCommissionEarned ?? 0).toLocaleString()}</strong></p>
+                    <p>Active Commission Rate: <strong>{overviewData?.commissionRatePct ?? 10}%</strong></p>
+                  </div>
+                </div>
+
+                {/* Bookings Report */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-white flex items-center gap-2">
+                      <CalendarCheck className="w-4 h-4 text-indigo-400" />
+                      Booking Volumes & Cancellation Report
+                    </h4>
+                    <button
+                      onClick={() => handleExportCSV('Bookings_Report', bookings)}
+                      className="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg text-slate-200 font-semibold flex items-center gap-1.5"
+                    >
+                      <Download className="w-3.5 h-3.5" /> CSV
+                    </button>
+                  </div>
+                  <div className="text-xs text-slate-400 space-y-1">
+                    <p>Total Bookings: <strong>{bookings.length}</strong></p>
+                    <p>Pending Review: <strong>{overviewData?.pendingBookings ?? 0}</strong></p>
+                    <p>Cancellation Rate: <strong>{overviewData?.cancellationRate ?? 0}%</strong></p>
+                  </div>
+                </div>
+
+                {/* Transport Utilization Report */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-white flex items-center gap-2">
+                      <Car className="w-4 h-4 text-cyan-400" />
+                      Transport Fleet Utilization
+                    </h4>
+                    <button
+                      onClick={() => handleExportCSV('Drivers_Fleet_Report', drivers)}
+                      className="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg text-slate-200 font-semibold flex items-center gap-1.5"
+                    >
+                      <Download className="w-3.5 h-3.5" /> CSV
+                    </button>
+                  </div>
+                  <div className="text-xs text-slate-400 space-y-1">
+                    <p>Active Vehicles: <strong>{vehicles.length}</strong></p>
+                    <p>Registered Drivers: <strong>{drivers.length}</strong></p>
+                    <p>Top Transit: <strong>E-Rickshaw Darshan Circuits</strong></p>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ========================================================= */}
-        {/* TAB 2: STAYS & PROPERTIES MANAGEMENT */}
-        {/* ========================================================= */}
-        {activeTab === 'hotels' && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold font-serif text-white flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-amber-500" />
-                  <span>Stays &amp; Properties ({filteredHotels.length})</span>
-                </h2>
-                <p className="text-xs text-stone-400">
-                  Manage all hotels, ashrams, dharamshalas, and heritage havelis across Braj
-                </p>
+          {/* =================================================================== */}
+          {/* TAB 10: AUDIT LOGS                                                  */}
+          {/* =================================================================== */}
+          {activeTab === 'audit' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <ShieldAlert className="w-5 h-5 text-red-400" />
+                    Immutable Security & Audit Trail
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Every admin action, property creation, and status toggle recorded with IP & timestamp
+                  </p>
+                </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowAddHotelModal(true)}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-900/30 cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" /> Add Property
-                </button>
-              </div>
-            </div>
-
-            {/* Filter Bar */}
-            <div className="flex flex-wrap items-center gap-3 bg-stone-900 p-3 rounded-2xl border border-stone-800 text-xs">
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="w-4 h-4 text-stone-500 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  placeholder="Search property name, owner, or landmark..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-stone-950 border border-stone-800 rounded-xl text-stone-200 focus:outline-none focus:border-amber-500"
-                />
-              </div>
-
-              <select
-                value={destFilter}
-                onChange={(e) => setDestFilter(e.target.value)}
-                className="px-3 py-2 bg-stone-950 border border-stone-800 rounded-xl text-stone-200 focus:outline-none focus:border-amber-500"
-              >
-                <option value="ALL">All Destinations</option>
-                <option value="VRINDAVAN">Vrindavan</option>
-                <option value="MATHURA">Mathura</option>
-                <option value="BARSANA">Barsana</option>
-                <option value="GOVARDHAN">Govardhan</option>
-              </select>
-
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 bg-stone-950 border border-stone-800 rounded-xl text-stone-200 focus:outline-none focus:border-amber-500"
-              >
-                <option value="ALL">All Statuses</option>
-                <option value="APPROVED">Approved</option>
-                <option value="SUBMITTED">Submitted</option>
-                <option value="SUSPENDED">Suspended</option>
-                <option value="REJECTED">Rejected</option>
-              </select>
-            </div>
-
-            {/* Hotels Table */}
-            <div className="bg-stone-900 border border-stone-800 rounded-3xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-stone-950/80 text-stone-400 font-bold border-b border-stone-800">
-                    <tr>
-                      <th className="p-4">Property</th>
-                      <th className="p-4">Destination</th>
-                      <th className="p-4">Price / Night</th>
-                      <th className="p-4">Satvik &amp; Darshan</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-800 text-stone-300">
-                    {filteredHotels.length === 0 ? (
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-slate-300">
+                    <thead className="bg-slate-950 text-xs uppercase text-slate-400 border-b border-slate-800">
                       <tr>
-                        <td colSpan={6} className="text-center py-10 text-stone-500">
-                          No properties found matching filters.
-                        </td>
+                        <th className="py-3 px-4">Timestamp</th>
+                        <th className="py-3 px-4">User</th>
+                        <th className="py-3 px-4">Action</th>
+                        <th className="py-3 px-4">Module</th>
+                        <th className="py-3 px-4">Details</th>
+                        <th className="py-3 px-4">IP Address</th>
                       </tr>
-                    ) : (
-                      filteredHotels.map((h) => (
-                        <tr key={h.id} className="hover:bg-stone-800/40 transition">
-                          <td className="p-4">
-                            <div className="font-bold text-white text-sm">{h.name}</div>
-                            <div className="text-[11px] text-stone-500">
-                              {h.nearestLandmark} • {h.stayType}
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <span className="px-2 py-0.5 rounded-full bg-stone-800 text-stone-300 border border-stone-700 text-[11px]">
-                              {h.destinationName}
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
+                      {auditLogs.map((log) => (
+                        <tr key={log.id} className="hover:bg-slate-800/30">
+                          <td className="py-3 px-4 text-slate-400">{log.timestamp}</td>
+                          <td className="py-3 px-4 text-white font-sans font-medium">{log.user}</td>
+                          <td className="py-3 px-4">
+                            <span className="px-2 py-0.5 rounded text-[11px] bg-slate-800 text-amber-300 font-semibold">
+                              {log.action}
                             </span>
                           </td>
-                          <td className="p-4 font-bold text-amber-400">
-                            ₹{h.pricePerNight}
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-1.5">
-                              {h.pureSatvikKitchen && (
-                                <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded">
-                                  Satvik
-                                </span>
-                              )}
-                              {h.templeDarshanAssistance && (
-                                <span className="text-[10px] bg-amber-950 text-amber-400 border border-amber-800 px-1.5 py-0.5 rounded">
-                                  Darshan
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <span
-                              className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                                h.status === 'APPROVED'
-                                  ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                                  : h.status === 'SUBMITTED'
-                                  ? 'bg-amber-950 text-amber-400 border border-amber-800'
-                                  : 'bg-red-950 text-red-400 border border-red-800'
-                              }`}
-                            >
-                              {h.status}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right space-x-2">
-                            <button
-                              onClick={() => setEditingHotel(h)}
-                              className="p-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white rounded-lg transition cursor-pointer"
-                              title="Edit Details"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleToggleSuspendHotel(h)}
-                              className="p-1.5 bg-stone-800 hover:bg-stone-700 text-amber-400 rounded-lg transition cursor-pointer"
-                              title="Toggle Suspend"
-                            >
-                              <ShieldAlert className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setHotelToDelete(h)}
-                              className="p-1.5 bg-stone-800 hover:bg-red-900/60 text-red-400 rounded-lg transition cursor-pointer"
-                              title="Delete Property"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
+                          <td className="py-3 px-4 text-slate-400">{log.module}</td>
+                          <td className="py-3 px-4 font-sans text-slate-300">{log.details}</td>
+                          <td className="py-3 px-4 text-slate-500">{log.ip_address}</td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ========================================================= */}
-        {/* TAB 3: BHOJAN & RESTAURANTS MANAGEMENT */}
-        {/* ========================================================= */}
-        {activeTab === 'bhojan' && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold font-serif text-white flex items-center gap-2">
-                  <Utensils className="w-5 h-5 text-orange-500" />
-                  <span>Bhojan &amp; Prasadam Kitchens ({filteredBhojanalayas.length})</span>
-                </h2>
-                <p className="text-xs text-stone-400">
-                  Manage divine bhojanalayas, ashram bhandaras, pure desi ghee sweet shops, and thali reservations
-                </p>
-              </div>
+          {/* =================================================================== */}
+          {/* TAB 11: SETTINGS & RBAC                                             */}
+          {/* =================================================================== */}
+          {activeTab === 'settings' && (
+            <div className="max-w-3xl space-y-8">
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 space-y-6">
+                <h3 className="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                  <Sliders className="w-4 h-4 text-amber-400" />
+                  Platform Governance & Commission
+                </h3>
 
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowAddBhojanModal(true)}
-                  className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-orange-900/30 cursor-pointer"
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    try {
+                      await updateAdminSettings(settings);
+                      showToast('Platform settings updated successfully');
+                    } catch {
+                      showToast('Failed to update settings');
+                    }
+                  }}
+                  className="space-y-4"
                 >
-                  <Plus className="w-4 h-4" /> Add Bhojanalaya
-                </button>
-              </div>
-            </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Sacred Notice Banner Text
+                    </label>
+                    <textarea
+                      value={settings.sacred_notice_text || ''}
+                      onChange={(e) => setSettings({ ...settings, sacred_notice_text: e.target.value })}
+                      rows={2}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
 
-            {/* Bhojanalayas Table */}
-            <div className="bg-stone-900 border border-stone-800 rounded-3xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-stone-950/80 text-stone-400 font-bold border-b border-stone-800">
-                    <tr>
-                      <th className="p-4">Bhojanalaya / Kitchen</th>
-                      <th className="p-4">Destination</th>
-                      <th className="p-4">Category</th>
-                      <th className="p-4">Avg Cost (2)</th>
-                      <th className="p-4">Purity Badges</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-800 text-stone-300">
-                    {filteredBhojanalayas.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="text-center py-10 text-stone-500">
-                          No bhojan spots found. Click &quot;Add Bhojanalaya&quot; to register one.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredBhojanalayas.map((b) => (
-                        <tr key={b.id} className="hover:bg-stone-800/40 transition">
-                          <td className="p-4">
-                            <div className="font-bold text-white text-sm">{b.name}</div>
-                            <div className="text-[11px] text-stone-500">
-                              {b.hindiName || b.nearestLandmark} • 🕒 {b.timings}
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <span className="px-2 py-0.5 rounded-full bg-stone-800 text-stone-300 border border-stone-700 text-[11px]">
-                              {b.destinationName}
-                            </span>
-                          </td>
-                          <td className="p-4 text-stone-300 font-medium">
-                            {b.categoryName || b.category}
-                          </td>
-                          <td className="p-4 font-bold text-orange-400">
-                            ₹{b.avgCostForTwo}
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-1.5">
-                              {b.pureSatvik && (
-                                <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded">
-                                  Satvik
-                                </span>
-                              )}
-                              {b.pureDesiGhee && (
-                                <span className="text-[10px] bg-amber-950 text-amber-400 border border-amber-800 px-1.5 py-0.5 rounded">
-                                  Desi Ghee
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <span
-                              className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                                b.status === 'APPROVED'
-                                  ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                                  : 'bg-red-950 text-red-400 border border-red-800'
-                              }`}
-                            >
-                              {b.status}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right space-x-2">
-                            <button
-                              onClick={() => setEditingBhojan(b)}
-                              className="p-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white rounded-lg transition cursor-pointer"
-                              title="Edit Bhojanalaya"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleToggleStatusBhojan(b)}
-                              className="p-1.5 bg-stone-800 hover:bg-stone-700 text-orange-400 rounded-lg transition cursor-pointer"
-                              title="Toggle Live Status"
-                            >
-                              <ShieldAlert className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setBhojanToDelete(b)}
-                              className="p-1.5 bg-stone-800 hover:bg-red-900/60 text-red-400 rounded-lg transition cursor-pointer"
-                              title="Delete Bhojanalaya"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">
+                        Platform Commission Rate (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={settings.platform_commission_pct || 10}
+                        onChange={(e) => setSettings({ ...settings, platform_commission_pct: parseFloat(e.target.value) })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">
+                        Support Phone
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.support_phone || ''}
+                        onChange={(e) => setSettings({ ...settings, support_phone: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
 
-            {/* Bhojan Thali Reservations Sub-Section */}
-            <div className="bg-stone-900 border border-stone-800 rounded-3xl p-6">
-              <h3 className="font-bold text-white text-base mb-3 flex items-center gap-2">
-                <Coffee className="w-5 h-5 text-orange-500" />
-                <span>Devotee Thali &amp; Prasad Pre-Bookings ({bhojanReservations.length})</span>
-              </h3>
-              {bhojanReservations.length === 0 ? (
-                <p className="text-xs text-stone-500">No devotee thali pre-bookings registered yet.</p>
-              ) : (
-                <div className="divide-y divide-stone-800">
-                  {bhojanReservations.map((res) => (
-                    <div key={res.id} className="py-3 flex items-center justify-between text-xs">
+                  <button
+                    type="submit"
+                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2.5 rounded-lg text-xs"
+                  >
+                    Save Platform Settings
+                  </button>
+                </form>
+              </div>
+
+              {/* RBAC Admin Users */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 space-y-4">
+                <h3 className="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                  <ShieldCheck className="w-4 h-4 text-amber-400" />
+                  Admin Users & RBAC Permissions
+                </h3>
+                <div className="space-y-3">
+                  {adminUsers.map((u) => (
+                    <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-950 border border-slate-800">
                       <div>
-                        <div className="font-bold text-white">{res.guestName}</div>
-                        <div className="text-stone-400 text-[11px]">
-                          📞 {res.guestPhone} • {res.bhojanalayaName} • {res.thaliCount} Thali(s) • {res.date} ({res.mealTime})
-                        </div>
+                        <div className="font-semibold text-white text-sm">{u.name}</div>
+                        <div className="text-xs text-slate-500">{u.email}</div>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-950 text-orange-300 border border-orange-800">
-                        {res.status}
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs bg-amber-500/20 text-amber-300 font-semibold px-2.5 py-1 rounded">
+                          {u.role}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
-              )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+      </main>
 
-        {/* ========================================================= */}
-        {/* TAB 4: PILGRIM BOOKINGS & ORDERS */}
-        {/* ========================================================= */}
-        {activeTab === 'bookings' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
+      {/* ===================================================================== */}
+      {/* 3. MULTI-STEP "ADD PROPERTY" MODAL                                    */}
+      {/* ===================================================================== */}
+      {showAddPropertyModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold font-serif text-white flex items-center gap-2">
-                  <CalendarCheck className="w-5 h-5 text-emerald-500" />
-                  <span>Pilgrim Stay Bookings ({bookings.length})</span>
-                </h2>
-                <p className="text-xs text-stone-400">
-                  All confirmed stay bookings and devotee darshan reservations
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-amber-400" />
+                  Add New Tourism Property / Service
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Step {currentStep} of 6 — Common Property Management Engine
                 </p>
               </div>
-            </div>
-
-            <div className="bg-stone-900 border border-stone-800 rounded-3xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-stone-950/80 text-stone-400 font-bold border-b border-stone-800">
-                    <tr>
-                      <th className="p-4">Reference</th>
-                      <th className="p-4">Pilgrim Name</th>
-                      <th className="p-4">Hotel / Stay</th>
-                      <th className="p-4">Dates</th>
-                      <th className="p-4">Amount</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-800 text-stone-300">
-                    {bookings.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="text-center py-10 text-stone-500">
-                          No bookings made yet.
-                        </td>
-                      </tr>
-                    ) : (
-                      bookings.map((b) => (
-                        <tr key={b.id} className="hover:bg-stone-800/40 transition">
-                          <td className="p-4 font-mono font-bold text-amber-400">
-                            {b.bookingReference}
-                          </td>
-                          <td className="p-4">
-                            <div className="font-bold text-white">{b.guestName}</div>
-                            <div className="text-[11px] text-stone-500">📞 {b.guestPhone}</div>
-                          </td>
-                          <td className="p-4 font-medium text-stone-200">
-                            {b.hotelName}
-                          </td>
-                          <td className="p-4 text-stone-400">
-                            {b.checkInDate} → {b.checkOutDate} ({b.totalNights}N)
-                          </td>
-                          <td className="p-4 font-bold text-emerald-400">
-                            ₹{b.grandTotal}
-                          </td>
-                          <td className="p-4">
-                            <select
-                              value={b.status}
-                              onChange={(e) => handleUpdateBookingStatus(b.id, e.target.value)}
-                              className="px-2 py-1 bg-stone-950 border border-stone-800 rounded-lg text-[11px] font-bold text-emerald-300 focus:outline-none"
-                            >
-                              <option value="CONFIRMED">CONFIRMED</option>
-                              <option value="CHECKED_IN">CHECKED_IN</option>
-                              <option value="COMPLETED">COMPLETED</option>
-                              <option value="CANCELLED">CANCELLED</option>
-                            </select>
-                          </td>
-                          <td className="p-4 text-right">
-                            <button
-                              onClick={() => handleDeleteBooking(b.id)}
-                              className="p-1.5 bg-stone-800 hover:bg-red-900/60 text-red-400 rounded-lg transition cursor-pointer"
-                              title="Delete Booking"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================= */}
-        {/* TAB 5: ONBOARDING APPROVALS QUEUE */}
-        {/* ========================================================= */}
-        {activeTab === 'approvals' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold font-serif text-white flex items-center gap-2">
-                <Clock className="w-5 h-5 text-amber-500" />
-                <span>Onboarding Approvals Queue ({pendingApprovalsCount})</span>
-              </h2>
-              <p className="text-xs text-stone-400">
-                Review submitted properties and satvik certifications before publishing to pilgrims
-              </p>
-            </div>
-
-            {hotels.filter(h => h.status === 'SUBMITTED' || h.status === 'UNDER_REVIEW').length === 0 ? (
-              <div className="bg-stone-900 border border-stone-800 rounded-3xl p-10 text-center text-stone-500 text-xs">
-                🎉 All property onboarding submissions have been reviewed and approved!
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {hotels
-                  .filter(h => h.status === 'SUBMITTED' || h.status === 'UNDER_REVIEW')
-                  .map((h) => (
-                    <div
-                      key={h.id}
-                      className="bg-stone-900 border border-amber-500/30 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-white text-base">{h.name}</h3>
-                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-950 text-amber-400 border border-amber-800">
-                            {h.status}
-                          </span>
-                        </div>
-                        <p className="text-xs text-stone-400 mt-1">
-                          📍 {h.destinationName} • Near {h.nearestLandmark} • ₹{h.pricePerNight}/night
-                        </p>
-                        <p className="text-[11px] text-stone-500 mt-0.5">
-                          Owner: {h.ownerName} ({h.ownerEmail}) • Submitted: {h.submittedAt}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleApproveHotel(h)}
-                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-900/30 cursor-pointer"
-                        >
-                          <Check className="w-4 h-4" /> Approve &amp; Publish
-                        </button>
-                        <button
-                          onClick={() => handleRejectHotel(h)}
-                          className="px-3 py-2 bg-stone-800 hover:bg-red-900/50 text-red-400 rounded-xl text-xs font-bold border border-stone-700 cursor-pointer"
-                        >
-                          <X className="w-4 h-4" /> Reject
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ========================================================= */}
-        {/* TAB 6: USERS & DEVOTEES MANAGEMENT */}
-        {/* ========================================================= */}
-        {activeTab === 'users' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold font-serif text-white flex items-center gap-2">
-                  <Users className="w-5 h-5 text-amber-500" />
-                  <span>Platform Accounts &amp; Roles ({users.length})</span>
-                </h2>
-                <p className="text-xs text-stone-400">
-                  Assign platform governance roles (Project Owner, Hotel Partner, Restaurant Manager, Pilgrim)
-                </p>
-              </div>
-
               <button
-                onClick={() => setShowAddUserModal(true)}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-900/30 cursor-pointer"
+                onClick={() => setShowAddPropertyModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
               >
-                <Plus className="w-4 h-4" /> Add Team Member
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="bg-stone-900 border border-stone-800 rounded-3xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-stone-950/80 text-stone-400 font-bold border-b border-stone-800">
-                    <tr>
-                      <th className="p-4">Name &amp; Email</th>
-                      <th className="p-4">Role</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4">Joined</th>
-                      <th className="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-800 text-stone-300">
-                    {users.map((u) => (
-                      <tr key={u.id} className="hover:bg-stone-800/40 transition">
-                        <td className="p-4">
-                          <div className="font-bold text-white text-sm">{u.name}</div>
-                          <div className="text-[11px] text-stone-500">{u.email}</div>
-                        </td>
-                        <td className="p-4">
-                          <select
-                            value={u.role}
-                            onChange={(e) => handleUpdateUserRole(u.id, e.target.value)}
-                            className="px-2.5 py-1 bg-stone-950 border border-stone-800 rounded-lg text-xs font-bold text-amber-300 focus:outline-none"
-                          >
-                            <option value="SYSTEM_ADMIN">SYSTEM_ADMIN (Owner)</option>
-                            <option value="HOTEL_ADMIN">HOTEL_ADMIN</option>
-                            <option value="RESTAURANT_MANAGER">RESTAURANT_MANAGER</option>
-                            <option value="CUSTOMER">CUSTOMER (Devotee)</option>
-                          </select>
-                        </td>
-                        <td className="p-4">
-                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">
-                            {u.status}
-                          </span>
-                        </td>
-                        <td className="p-4 text-stone-400">{u.joined || '03 Oct 2026'}</td>
-                        <td className="p-4 text-right">
-                          <button
-                            onClick={() => handleDeleteUser(u.id)}
-                            className="p-1.5 bg-stone-800 hover:bg-red-900/60 text-red-400 rounded-lg transition cursor-pointer"
-                            title="Delete Account"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================= */}
-        {/* TAB 7: REVENUE & FINANCIALS */}
-        {/* ========================================================= */}
-        {activeTab === 'payments' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold font-serif text-white flex items-center gap-2">
-                <IndianRupee className="w-5 h-5 text-emerald-400" />
-                <span>Financial Command &amp; Commissions</span>
-              </h2>
-              <p className="text-xs text-stone-400">
-                Gross platform revenue and Project Owner commission settlement
-              </p>
+            {/* Stepper Wizard Indicator */}
+            <div className="px-6 py-3 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between text-xs font-semibold">
+              {[
+                '1. Basic Info',
+                '2. Location',
+                '3. Images',
+                '4. Specifics',
+                '5. Rules & Pricing',
+                '6. Review'
+              ].map((label, idx) => (
+                <div
+                  key={idx}
+                  className={`flex items-center gap-1.5 ${
+                    currentStep === idx + 1
+                      ? 'text-amber-400 font-bold'
+                      : currentStep > idx + 1
+                      ? 'text-emerald-400'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                    currentStep === idx + 1
+                      ? 'bg-amber-400 text-slate-950'
+                      : currentStep > idx + 1
+                      ? 'bg-emerald-500 text-slate-950'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    {idx + 1}
+                  </span>
+                  <span className="hidden sm:inline">{label}</span>
+                </div>
+              ))}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-stone-900 border border-stone-800 rounded-2xl p-5">
-                <span className="text-xs text-stone-400">Total Gross Platform Volume</span>
-                <div className="text-3xl font-black text-white mt-1">₹{grossTurnover.toLocaleString()}</div>
-                <p className="text-[11px] text-stone-500 mt-1">Stays &amp; Darshan Desk transactions</p>
-              </div>
-
-              <div className="bg-stone-900 border border-emerald-800/40 rounded-2xl p-5">
-                <span className="text-xs text-emerald-400 font-bold">Owner Commission ({settings.platformCommissionPct}%)</span>
-                <div className="text-3xl font-black text-emerald-400 mt-1">₹{ownerCommissionEarned.toLocaleString()}</div>
-                <p className="text-[11px] text-stone-400 mt-1">Net platform earnings</p>
-              </div>
-
-              <div className="bg-stone-900 border border-stone-800 rounded-2xl p-5">
-                <span className="text-xs text-stone-400">Partner &amp; Vendor Payouts</span>
-                <div className="text-3xl font-black text-amber-400 mt-1">₹{(grossTurnover - ownerCommissionEarned).toLocaleString()}</div>
-                <p className="text-[11px] text-stone-500 mt-1">Disbursed to verified Braj hosts</p>
-              </div>
-            </div>
-
-            {/* Destination Breakdown */}
-            <div className="bg-stone-900 border border-stone-800 rounded-3xl p-6">
-              <h3 className="font-bold text-white text-base mb-4">Gross Turnover by Sacred Destination</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-                {['Vrindavan', 'Mathura', 'Barsana', 'Govardhan'].map((dest) => (
-                  <div key={dest} className="p-3 bg-stone-950 rounded-2xl border border-stone-800">
-                    <div className="font-bold text-stone-300">{dest}</div>
-                    <div className="text-base font-black text-amber-400 mt-1">
-                      ₹{Math.round(grossTurnover * 0.25).toLocaleString()}
+            {/* Step Body */}
+            <form onSubmit={handleCreateProperty} className="p-6 overflow-y-auto flex-1 space-y-5">
+              {/* STEP 1: BASIC INFO */}
+              {currentStep === 1 && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">
+                        Property / Service Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Shri Radha Raman Kripa Dham"
+                        value={newProperty.name}
+                        onChange={(e) => setNewProperty({ ...newProperty, name: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">
+                        Property Type *
+                      </label>
+                      <select
+                        value={newProperty.propertyType}
+                        onChange={(e) => setNewProperty({ ...newProperty, propertyType: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-amber-300 font-semibold focus:outline-none focus:border-amber-500"
+                      >
+                        <option value="Hotel">Hotel</option>
+                        <option value="Restaurant">Restaurant / Bhojanalaya</option>
+                        <option value="Ashram">Ashram (Spiritual)</option>
+                        <option value="Dharamshala">Dharamshala (Pilgrim Home)</option>
+                        <option value="Transport">Car / E-Rickshaw Transport</option>
+                      </select>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* ========================================================= */}
-        {/* TAB 8: PLATFORM & NOTICE SETTINGS */}
-        {/* ========================================================= */}
-        {activeTab === 'settings' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold font-serif text-white flex items-center gap-2">
-                <Sliders className="w-5 h-5 text-amber-500" />
-                <span>Platform Governance &amp; Announcement Settings</span>
-              </h2>
-              <p className="text-xs text-stone-400">
-                Configure site-wide sacred announcements, commission rates, and official seva contacts
-              </p>
-            </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="Sacred ambiance, distance to temples, sattvic food..."
+                      value={newProperty.description}
+                      onChange={(e) => setNewProperty({ ...newProperty, description: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
 
-            <form onSubmit={handleSaveSettings} className="bg-stone-900 border border-stone-800 rounded-3xl p-6 space-y-6 text-xs max-w-2xl">
-              <div>
-                <label className="block text-stone-300 font-bold mb-1.5 flex items-center gap-2">
-                  <Megaphone className="w-4 h-4 text-amber-400" />
-                  <span>Public Sacred Announcement Banner</span>
-                </label>
-                <textarea
-                  rows={3}
-                  value={settings.sacredNoticeText}
-                  onChange={(e) => setSettings({ ...settings, sacredNoticeText: e.target.value })}
-                  placeholder="Enter message displayed to pilgrims across the website..."
-                  className="w-full px-3.5 py-2.5 bg-stone-950 border border-stone-800 rounded-xl text-stone-100 focus:outline-none focus:border-amber-500"
-                />
-                <div className="flex items-center gap-2 mt-2">
-                  <input
-                    type="checkbox"
-                    id="noticeToggle"
-                    checked={settings.sacredNoticeEnabled}
-                    onChange={(e) => setSettings({ ...settings, sacredNoticeEnabled: e.target.checked })}
-                    className="rounded bg-stone-950 border-stone-800 text-amber-600 focus:ring-0"
-                  />
-                  <label htmlFor="noticeToggle" className="text-stone-300 font-semibold cursor-pointer">
-                    Enable sacred banner across public website
-                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Owner Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Mahant Ji / Seva Trust"
+                        value={newProperty.ownerName}
+                        onChange={(e) => setNewProperty({ ...newProperty, ownerName: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Contact Phone</label>
+                      <input
+                        type="text"
+                        placeholder="+91 98765 00000"
+                        value={newProperty.contactNumber}
+                        onChange={(e) => setNewProperty({ ...newProperty, contactNumber: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Email</label>
+                      <input
+                        type="email"
+                        placeholder="seva@brijnidhi.org"
+                        value={newProperty.email}
+                        onChange={(e) => setNewProperty({ ...newProperty, email: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-stone-300 font-bold mb-1">Platform Commission Rate (%)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={30}
-                    value={settings.platformCommissionPct}
-                    onChange={(e) => setSettings({ ...settings, platformCommissionPct: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 bg-stone-950 border border-stone-800 rounded-xl text-stone-100 focus:outline-none focus:border-amber-500"
-                  />
+              {/* STEP 2: LOCATION */}
+              {currentStep === 2 && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Address *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Parikrama Marg, Raman Reti"
+                        value={newProperty.address}
+                        onChange={(e) => setNewProperty({ ...newProperty, address: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">City / Holy Area</label>
+                      <select
+                        value={newProperty.city}
+                        onChange={(e) => setNewProperty({ ...newProperty, city: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                      >
+                        <option value="Vrindavan">Vrindavan</option>
+                        <option value="Mathura">Mathura</option>
+                        <option value="Barsana">Barsana</option>
+                        <option value="Govardhan">Govardhan</option>
+                        <option value="Nandgaon">Nandgaon</option>
+                        <option value="Gokul">Gokul</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Nearby Landmark</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Near ISKCON Temple / Bankey Bihari"
+                        value={newProperty.nearbyLandmark}
+                        onChange={(e) => setNewProperty({ ...newProperty, nearbyLandmark: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Latitude</label>
+                      <input
+                        type="number"
+                        step="0.0001"
+                        value={newProperty.latitude}
+                        onChange={(e) => setNewProperty({ ...newProperty, latitude: parseFloat(e.target.value) })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Longitude</label>
+                      <input
+                        type="number"
+                        step="0.0001"
+                        value={newProperty.longitude}
+                        onChange={(e) => setNewProperty({ ...newProperty, longitude: parseFloat(e.target.value) })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-stone-300 font-bold mb-1">Support Seva Phone</label>
-                  <input
-                    type="text"
-                    value={settings.supportPhone}
-                    onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-stone-950 border border-stone-800 rounded-xl text-stone-100 focus:outline-none focus:border-amber-500"
-                  />
+              )}
+
+              {/* STEP 3: IMAGES & MEDIA */}
+              {currentStep === 3 && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Main Cover Image URL *</label>
+                    <input
+                      type="url"
+                      required
+                      placeholder="https://images.unsplash.com/..."
+                      value={newProperty.mainImage}
+                      onChange={(e) => setNewProperty({ ...newProperty, mainImage: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  {newProperty.mainImage && (
+                    <div className="w-full h-44 rounded-xl overflow-hidden border border-slate-800 relative">
+                      <img src={newProperty.mainImage} alt="Preview" className="w-full h-full object-cover" />
+                      <div className="absolute bottom-2 left-2 bg-slate-950/80 px-2 py-1 rounded text-[11px] text-white">
+                        Main Image Preview
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
 
-              <div>
-                <label className="block text-stone-300 font-bold mb-1">Support Seva Email</label>
-                <input
-                  type="email"
-                  value={settings.supportEmail}
-                  onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-stone-950 border border-stone-800 rounded-xl text-stone-100 focus:outline-none focus:border-amber-500"
-                />
-              </div>
+              {/* STEP 4: TYPE SPECIFIC FIELDS */}
+              {currentStep === 4 && (
+                <div className="space-y-4">
+                  {/* IF HOTEL */}
+                  {newProperty.propertyType === 'Hotel' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Star Rating</label>
+                          <select
+                            value={newProperty.hotelDetails.starRating}
+                            onChange={(e) =>
+                              setNewProperty({
+                                ...newProperty,
+                                hotelDetails: { ...newProperty.hotelDetails, starRating: parseInt(e.target.value) }
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          >
+                            <option value={3}>3 Star</option>
+                            <option value={4}>4 Star</option>
+                            <option value={5}>5 Star Heritage</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Total Rooms</label>
+                          <input
+                            type="number"
+                            value={newProperty.hotelDetails.totalRooms}
+                            onChange={(e) =>
+                              setNewProperty({
+                                ...newProperty,
+                                hotelDetails: { ...newProperty.hotelDetails, totalRooms: parseInt(e.target.value) }
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Check-in Time</label>
+                          <input
+                            type="text"
+                            value={newProperty.hotelDetails.checkInTime}
+                            onChange={(e) =>
+                              setNewProperty({
+                                ...newProperty,
+                                hotelDetails: { ...newProperty.hotelDetails, checkInTime: e.target.value }
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Check-out Time</label>
+                          <input
+                            type="text"
+                            value={newProperty.hotelDetails.checkOutTime}
+                            onChange={(e) =>
+                              setNewProperty({
+                                ...newProperty,
+                                hotelDetails: { ...newProperty.hotelDetails, checkOutTime: e.target.value }
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          />
+                        </div>
+                      </div>
 
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl shadow-md transition cursor-pointer"
-                >
-                  Save Platform Settings
-                </button>
+                      {/* Amenities checklist */}
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-2">Hotel Amenities</label>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {[
+                            'Wi-Fi',
+                            'Parking',
+                            'Pure Satvik Kitchen',
+                            'AC',
+                            'Room Service',
+                            'Laundry',
+                            'Hot Water',
+                            'Power Backup',
+                            'Elevator',
+                            'CCTV',
+                            'Temple Darshan Assistance'
+                          ].map((am, i) => (
+                            <label key={i} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={newProperty.hotelDetails.amenities.includes(am)}
+                                onChange={(e) => {
+                                  const current = newProperty.hotelDetails.amenities;
+                                  const updated = e.target.checked
+                                    ? [...current, am]
+                                    : current.filter((x: string) => x !== am);
+                                  setNewProperty({
+                                    ...newProperty,
+                                    hotelDetails: { ...newProperty.hotelDetails, amenities: updated }
+                                  });
+                                }}
+                                className="rounded bg-slate-950 border-slate-800 text-amber-500 focus:ring-0"
+                              />
+                              <span>{am}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* IF RESTAURANT */}
+                  {newProperty.propertyType === 'Restaurant' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Opening Time</label>
+                          <input
+                            type="text"
+                            value={newProperty.restaurantDetails.openingTime}
+                            onChange={(e) =>
+                              setNewProperty({
+                                ...newProperty,
+                                restaurantDetails: { ...newProperty.restaurantDetails, openingTime: e.target.value }
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Closing Time</label>
+                          <input
+                            type="text"
+                            value={newProperty.restaurantDetails.closingTime}
+                            onChange={(e) =>
+                              setNewProperty({
+                                ...newProperty,
+                                restaurantDetails: { ...newProperty.restaurantDetails, closingTime: e.target.value }
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Seating Capacity</label>
+                          <input
+                            type="number"
+                            value={newProperty.restaurantDetails.seatingCapacity}
+                            onChange={(e) =>
+                              setNewProperty({
+                                ...newProperty,
+                                restaurantDetails: { ...newProperty.restaurantDetails, seatingCapacity: parseInt(e.target.value) }
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Average Cost (₹)</label>
+                          <input
+                            type="number"
+                            value={newProperty.restaurantDetails.averageCost}
+                            onChange={(e) =>
+                              setNewProperty({
+                                ...newProperty,
+                                restaurantDetails: { ...newProperty.restaurantDetails, averageCost: parseFloat(e.target.value) }
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* IF ASHRAM */}
+                  {newProperty.propertyType === 'Ashram' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Stay Policy</label>
+                          <select
+                            value={newProperty.ashramDetails.stayType}
+                            onChange={(e) =>
+                              setNewProperty({
+                                ...newProperty,
+                                ashramDetails: { ...newProperty.ashramDetails, stayType: e.target.value }
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          >
+                            <option value="Donation-based stay">Donation-based stay</option>
+                            <option value="Free stay">Free stay (Seva/Pilgrim)</option>
+                            <option value="Volunteer stay">Volunteer stay</option>
+                            <option value="Paid booking">Paid booking</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Total Beds</label>
+                          <input
+                            type="number"
+                            value={newProperty.ashramDetails.totalBeds}
+                            onChange={(e) =>
+                              setNewProperty({
+                                ...newProperty,
+                                ashramDetails: { ...newProperty.ashramDetails, totalBeds: parseInt(e.target.value) }
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Suggested Donation (₹)</label>
+                          <input
+                            type="number"
+                            value={newProperty.ashramDetails.donationAmount}
+                            onChange={(e) =>
+                              setNewProperty({
+                                ...newProperty,
+                                ashramDetails: { ...newProperty.ashramDetails, donationAmount: parseFloat(e.target.value) }
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* IF DHARAMSHALA */}
+                  {newProperty.propertyType === 'Dharamshala' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Total Rooms</label>
+                          <input
+                            type="number"
+                            value={newProperty.dharamshalaDetails.totalRooms}
+                            onChange={(e) =>
+                              setNewProperty({
+                                ...newProperty,
+                                dharamshalaDetails: { ...newProperty.dharamshalaDetails, totalRooms: parseInt(e.target.value) }
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Price Per Night (₹)</label>
+                          <input
+                            type="number"
+                            value={newProperty.dharamshalaDetails.pricePerNight}
+                            onChange={(e) =>
+                              setNewProperty({
+                                ...newProperty,
+                                dharamshalaDetails: { ...newProperty.dharamshalaDetails, pricePerNight: parseFloat(e.target.value) }
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Food / Prasad Available</label>
+                          <select
+                            value={newProperty.dharamshalaDetails.foodAvailability ? 'true' : 'false'}
+                            onChange={(e) =>
+                              setNewProperty({
+                                ...newProperty,
+                                dharamshalaDetails: {
+                                  ...newProperty.dharamshalaDetails,
+                                  foodAvailability: e.target.value === 'true'
+                                }
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          >
+                            <option value="true">Yes, Bhojan Available</option>
+                            <option value="false">No Food Facility</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* IF TRANSPORT */}
+                  {newProperty.propertyType === 'Transport' && (
+                    <div className="space-y-4">
+                      <p className="text-xs text-slate-400">
+                        Default transit vehicle assigned for this provider. Additional fleet can be added in Transport tab.
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Vehicle Type</label>
+                          <select
+                            value={newProperty.transportDetails.vehicles[0]?.vehicleType || 'E-Rickshaw'}
+                            onChange={(e) => {
+                              const updated = [...newProperty.transportDetails.vehicles];
+                              updated[0].vehicleType = e.target.value;
+                              setNewProperty({
+                                ...newProperty,
+                                transportDetails: { ...newProperty.transportDetails, vehicles: updated }
+                              });
+                            }}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          >
+                            <option value="E-Rickshaw">E-Rickshaw</option>
+                            <option value="Car">Car (Sedan/SUV)</option>
+                            <option value="Auto">Auto Rickshaw</option>
+                            <option value="Tempo Traveller">Tempo Traveller</option>
+                            <option value="Bus">Bus</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Vehicle Number</label>
+                          <input
+                            type="text"
+                            value={newProperty.transportDetails.vehicles[0]?.vehicleNumber || ''}
+                            onChange={(e) => {
+                              const updated = [...newProperty.transportDetails.vehicles];
+                              updated[0].vehicleNumber = e.target.value;
+                              setNewProperty({
+                                ...newProperty,
+                                transportDetails: { ...newProperty.transportDetails, vehicles: updated }
+                              });
+                            }}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Daily Price (₹)</label>
+                          <input
+                            type="number"
+                            value={newProperty.transportDetails.vehicles[0]?.dailyPrice || 900}
+                            onChange={(e) => {
+                              const updated = [...newProperty.transportDetails.vehicles];
+                              updated[0].dailyPrice = parseFloat(e.target.value);
+                              setNewProperty({
+                                ...newProperty,
+                                transportDetails: { ...newProperty.transportDetails, vehicles: updated }
+                              });
+                            }}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* STEP 5: RULES & POLICIES */}
+              {currentStep === 5 && (
+                <div className="space-y-4">
+                  <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-3">
+                    <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+                      Sacred Tourism Standards & Policies
+                    </h4>
+                    <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                      <input type="checkbox" defaultChecked className="rounded bg-slate-900 border-slate-700 text-amber-500" />
+                      <span>Pure Satvik premises (strictly no onion, garlic, or non-veg food)</span>
+                    </label>
+                    <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                      <input type="checkbox" defaultChecked className="rounded bg-slate-900 border-slate-700 text-amber-500" />
+                      <span>Compliant with Braj Pilgrim Safety & Sanitation guidelines</span>
+                    </label>
+                    <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                      <input type="checkbox" defaultChecked className="rounded bg-slate-900 border-slate-700 text-amber-500" />
+                      <span>24x7 Hot water & temple darshan guidance available</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 6: REVIEW & SUBMIT */}
+              {currentStep === 6 && (
+                <div className="space-y-4">
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                      <div>
+                        <h4 className="font-bold text-white text-base">{newProperty.name}</h4>
+                        <span className="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-medium">
+                          {newProperty.propertyType}
+                        </span>
+                      </div>
+                      <span className="text-xs text-slate-400">{newProperty.city}, UP</span>
+                    </div>
+
+                    <div className="text-xs text-slate-400 grid grid-cols-2 gap-3">
+                      <div>Owner: <span className="text-slate-200">{newProperty.ownerName}</span></div>
+                      <div>Contact: <span className="text-slate-200">{newProperty.contactNumber}</span></div>
+                      <div>Address: <span className="text-slate-200">{newProperty.address}</span></div>
+                      <div>Status: <span className="text-emerald-400 font-semibold">{newProperty.status}</span></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Footer Controls */}
+              <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+                {currentStep > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(currentStep - 1)}
+                    className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300"
+                  >
+                    ← Back
+                  </button>
+                ) : <div />}
+
+                {currentStep < 6 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newProperty.name && currentStep === 1) {
+                        alert('Please fill in Property Name');
+                        return;
+                      }
+                      setCurrentStep(currentStep + 1);
+                    }}
+                    className="px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-xs font-bold text-slate-950 flex items-center gap-1"
+                  >
+                    <span>Next Step</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="px-6 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-xs font-bold text-slate-950 flex items-center gap-1.5 shadow-lg shadow-emerald-500/20"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Confirm & Publish to Rust</span>
+                  </button>
+                )}
               </div>
             </form>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ========================================================= */}
-        {/* TAB 9: AUDIT LOGS */}
-        {/* ========================================================= */}
-        {activeTab === 'audit' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold font-serif text-white flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 text-amber-500" />
-                <span>Platform Security &amp; Audit Logs ({auditLogs.length})</span>
-              </h2>
-              <p className="text-xs text-stone-400">
-                Immutable chronological log of all administrative actions, property updates, and role assignments
-              </p>
+      {/* REJECT MODAL */}
+      {propertyToReject && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4">
+            <h3 className="text-base font-bold text-white flex items-center gap-2 text-rose-400">
+              <XCircle className="w-5 h-5" />
+              Reject Property Submission
+            </h3>
+            <p className="text-xs text-slate-300">
+              Please provide the reason for rejecting <strong>{propertyToReject.name}</strong>. This explanation will be logged and sent to the owner.
+            </p>
+            <textarea
+              rows={3}
+              required
+              placeholder="e.g. Incomplete fire safety documents, or did not adhere to satvik pledge..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
+            />
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setPropertyToReject(null)}
+                className="px-4 py-2 rounded-lg bg-slate-800 text-xs text-slate-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleReject}
+                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-xs font-semibold text-white"
+              >
+                Confirm Rejection
+              </button>
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="bg-stone-900 border border-stone-800 rounded-3xl p-6">
-              <div className="space-y-3">
-                {auditLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="p-3.5 bg-stone-950 border border-stone-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
-                  >
-                    <div>
-                      <div className="font-bold text-stone-200">{log.details}</div>
-                      <div className="text-[11px] text-stone-500 mt-0.5">
-                        By <span className="text-amber-400">{log.adminName}</span> • Entity: {log.entityType} ({log.entityId})
-                      </div>
-                    </div>
-                    <div className="text-right text-[11px] text-stone-500 font-mono">
-                      <div>IP: {log.ipAddress}</div>
-                      <div>{log.timestamp}</div>
-                    </div>
-                  </div>
-                ))}
+      {/* ADD DRIVER MODAL */}
+      {showAddDriverModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4">
+            <h3 className="text-base font-bold text-white flex items-center gap-2 text-cyan-400">
+              <Car className="w-5 h-5" />
+              Register Transport Driver
+            </h3>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  await createAdminDriver(newDriver);
+                  showToast(`Driver ${newDriver.name} added!`);
+                  setShowAddDriverModal(false);
+                  loadAllData();
+                } catch {
+                  showToast('Failed to add driver');
+                }
+              }}
+              className="space-y-3"
+            >
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Driver Name</label>
+                <input
+                  type="text"
+                  required
+                  value={newDriver.name}
+                  onChange={(e) => setNewDriver({ ...newDriver, name: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
+                />
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================= */}
-        {/* MODAL: ADD HOTEL */}
-        {/* ========================================================= */}
-        {showAddHotelModal && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-stone-900 border border-stone-700 rounded-3xl max-w-xl w-full p-6 text-stone-100 shadow-2xl relative my-8">
-              <button
-                onClick={() => setShowAddHotelModal(false)}
-                className="absolute top-5 right-5 text-stone-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <h2 className="text-xl font-bold font-serif text-white mb-4 flex items-center space-x-2">
-                <Building2 className="w-5 h-5 text-amber-500" />
-                <span>Add New Braj Property</span>
-              </h2>
-
-              <form onSubmit={handleCreateHotel} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-stone-300 font-semibold mb-1">Hotel / Stay Name *</label>
+                  <label className="block text-xs text-slate-400 mb-1">Phone</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Shri Radhavallabh Kripa Dham"
-                    value={newHotel.name}
-                    onChange={(e) => setNewHotel({ ...newHotel, name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-stone-800 border border-stone-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                    value={newDriver.phone}
+                    onChange={(e) => setNewDriver({ ...newDriver, phone: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                   />
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-stone-300 font-semibold mb-1">Destination</label>
-                    <select
-                      value={newHotel.destinationSlug}
-                      onChange={(e) => setNewHotel({ ...newHotel, destinationSlug: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-stone-800 border border-stone-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
-                    >
-                      <option value="vrindavan">Vrindavan</option>
-                      <option value="mathura">Mathura</option>
-                      <option value="barsana">Barsana</option>
-                      <option value="govardhan">Govardhan</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-stone-300 font-semibold mb-1">Price Per Night (₹)</label>
-                    <input
-                      type="number"
-                      required
-                      min={300}
-                      value={newHotel.pricePerNight}
-                      onChange={(e) => setNewHotel({ ...newHotel, pricePerNight: Number(e.target.value) })}
-                      className="w-full px-3.5 py-2.5 bg-stone-800 border border-stone-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
-                </div>
-
                 <div>
-                  <label className="block text-stone-300 font-semibold mb-1">Nearest Temple / Landmark</label>
-                  <input
-                    type="text"
-                    value={newHotel.nearestLandmark}
-                    onChange={(e) => setNewHotel({ ...newHotel, nearestLandmark: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-stone-800 border border-stone-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                <div className="flex items-center space-x-4 pt-1">
-                  <label className="flex items-center space-x-2 text-stone-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={newHotel.pureSatvikKitchen}
-                      onChange={(e) => setNewHotel({ ...newHotel, pureSatvikKitchen: e.target.checked })}
-                      className="rounded bg-stone-800 border-stone-700 text-amber-600 focus:ring-0"
-                    />
-                    <span>100% Satvik Kitchen</span>
-                  </label>
-                  <label className="flex items-center space-x-2 text-stone-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={newHotel.templeDarshanAssistance}
-                      onChange={(e) => setNewHotel({ ...newHotel, templeDarshanAssistance: e.target.checked })}
-                      className="rounded bg-stone-800 border-stone-700 text-amber-600 focus:ring-0"
-                    />
-                    <span>Darshan Desk</span>
-                  </label>
-                </div>
-
-                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-stone-800">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddHotelModal(false)}
-                    className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-xl cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl shadow cursor-pointer"
-                  >
-                    Create &amp; Publish
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================= */}
-        {/* MODAL: ADD BHOJANALAYA */}
-        {/* ========================================================= */}
-        {showAddBhojanModal && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-stone-900 border border-stone-700 rounded-3xl max-w-xl w-full p-6 text-stone-100 shadow-2xl relative my-8">
-              <button
-                onClick={() => setShowAddBhojanModal(false)}
-                className="absolute top-5 right-5 text-stone-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <h2 className="text-xl font-bold font-serif text-white mb-4 flex items-center space-x-2">
-                <Utensils className="w-5 h-5 text-orange-500" />
-                <span>Add Divine Bhojan / Kitchen</span>
-              </h2>
-
-              <form onSubmit={handleCreateBhojan} className="space-y-4 text-xs">
-                <div>
-                  <label className="block text-stone-300 font-semibold mb-1">Bhojanalaya Name *</label>
+                  <label className="block text-xs text-slate-400 mb-1">License No.</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Shri Radhavallabh Satvik Bhojanalaya"
-                    value={newBhojan.name}
-                    onChange={(e) => setNewBhojan({ ...newBhojan, name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-stone-800 border border-stone-700 rounded-xl text-white focus:outline-none focus:border-orange-500"
+                    value={newDriver.licenseNumber}
+                    onChange={(e) => setNewDriver({ ...newDriver, licenseNumber: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                   />
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-stone-300 font-semibold mb-1">Destination</label>
-                    <select
-                      value={newBhojan.destinationSlug}
-                      onChange={(e) => setNewBhojan({ ...newBhojan, destinationSlug: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-stone-800 border border-stone-700 rounded-xl text-white focus:outline-none focus:border-orange-500"
-                    >
-                      <option value="vrindavan">Vrindavan</option>
-                      <option value="mathura">Mathura</option>
-                      <option value="barsana">Barsana</option>
-                      <option value="govardhan">Govardhan</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-stone-300 font-semibold mb-1">Avg Cost for Two (₹)</label>
-                    <input
-                      type="number"
-                      required
-                      min={50}
-                      value={newBhojan.avgCostForTwo}
-                      onChange={(e) => setNewBhojan({ ...newBhojan, avgCostForTwo: Number(e.target.value) })}
-                      className="w-full px-3.5 py-2.5 bg-stone-800 border border-stone-700 rounded-xl text-white focus:outline-none focus:border-orange-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-stone-300 font-semibold mb-1">Speciality Dishes (Comma separated)</label>
-                  <input
-                    type="text"
-                    value={newBhojan.specialityDishes}
-                    onChange={(e) => setNewBhojan({ ...newBhojan, specialityDishes: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-stone-800 border border-stone-700 rounded-xl text-white focus:outline-none focus:border-orange-500"
-                  />
-                </div>
-
-                <div className="flex items-center space-x-4 pt-1">
-                  <label className="flex items-center space-x-2 text-stone-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={newBhojan.pureSatvik}
-                      onChange={(e) => setNewBhojan({ ...newBhojan, pureSatvik: e.target.checked })}
-                      className="rounded bg-stone-800 border-stone-700 text-orange-600 focus:ring-0"
-                    />
-                    <span>100% Satvik Pure Veg</span>
-                  </label>
-                  <label className="flex items-center space-x-2 text-stone-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={newBhojan.pureDesiGhee}
-                      onChange={(e) => setNewBhojan({ ...newBhojan, pureDesiGhee: e.target.checked })}
-                      className="rounded bg-stone-800 border-stone-700 text-orange-600 focus:ring-0"
-                    />
-                    <span>Pure Desi Ghee</span>
-                  </label>
-                </div>
-
-                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-stone-800">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddBhojanModal(false)}
-                    className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-xl cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl shadow cursor-pointer"
-                  >
-                    Publish Bhojan Spot
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================= */}
-        {/* MODAL: EDIT HOTEL */}
-        {/* ========================================================= */}
-        {editingHotel && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-stone-900 border border-stone-700 rounded-3xl max-w-xl w-full p-6 text-stone-100 shadow-2xl relative my-8">
-              <button
-                onClick={() => setEditingHotel(null)}
-                className="absolute top-5 right-5 text-stone-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <h2 className="text-xl font-bold font-serif text-white mb-2 flex items-center space-x-2">
-                <Edit3 className="w-5 h-5 text-amber-500" />
-                <span>Edit Hotel Details</span>
-              </h2>
-              <p className="text-xs text-stone-400 mb-4">Editing {editingHotel.name}</p>
-
-              <form onSubmit={handleUpdateHotel} className="space-y-4 text-xs">
-                <div>
-                  <label className="block text-stone-300 font-semibold mb-1">Hotel Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={editingHotel.name}
-                    onChange={(e) => setEditingHotel({ ...editingHotel, name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-stone-800 border border-stone-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-stone-300 font-semibold mb-1">Price Per Night (₹)</label>
-                    <input
-                      type="number"
-                      required
-                      min={300}
-                      value={editingHotel.pricePerNight}
-                      onChange={(e) => setEditingHotel({ ...editingHotel, pricePerNight: Number(e.target.value) })}
-                      className="w-full px-3.5 py-2.5 bg-stone-800 border border-stone-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-stone-300 font-semibold mb-1">Nearest Landmark</label>
-                    <input
-                      type="text"
-                      value={editingHotel.nearestLandmark || ''}
-                      onChange={(e) => setEditingHotel({ ...editingHotel, nearestLandmark: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-stone-800 border border-stone-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-stone-800">
-                  <button
-                    type="button"
-                    onClick={() => setEditingHotel(null)}
-                    className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-xl cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl shadow cursor-pointer"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================= */}
-        {/* MODAL: DELETE CONFIRMATION */}
-        {/* ========================================================= */}
-        {hotelToDelete && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-stone-900 border border-red-500/50 rounded-3xl max-w-sm w-full p-6 text-stone-100 shadow-2xl text-center">
-              <div className="w-12 h-12 mx-auto rounded-full bg-red-950 text-red-400 flex items-center justify-center mb-3">
-                <Trash2 className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-white text-base mb-1">Delete Property?</h3>
-              <p className="text-xs text-stone-400 mb-6">
-                Are you sure you want to permanently remove <strong className="text-white">{hotelToDelete.name}</strong> from the platform?
-              </p>
-              <div className="flex items-center justify-center space-x-3">
+              <div className="flex items-center justify-end gap-3 pt-3">
                 <button
-                  onClick={() => setHotelToDelete(null)}
-                  className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-xl text-xs cursor-pointer"
+                  type="button"
+                  onClick={() => setShowAddDriverModal(false)}
+                  className="px-4 py-2 rounded-lg bg-slate-800 text-xs text-slate-300"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleDeleteHotel}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-xs cursor-pointer"
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-xs font-semibold text-white"
                 >
-                  Delete Permanently
+                  Save Driver
                 </button>
               </div>
-            </div>
+            </form>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ========================================================= */}
-        {/* MODAL: ADD USER */}
-        {/* ========================================================= */}
-        {showAddUserModal && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-stone-900 border border-stone-700 rounded-3xl max-w-md w-full p-6 text-stone-100 shadow-2xl relative">
-              <button
-                onClick={() => setShowAddUserModal(false)}
-                className="absolute top-5 right-5 text-stone-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <h2 className="text-lg font-bold font-serif text-white mb-4 flex items-center space-x-2">
-                <UserCheck className="w-5 h-5 text-amber-500" />
-                <span>Add Platform Team Member</span>
-              </h2>
-
-              <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
+      {/* ADD COUPON MODAL */}
+      {showAddCouponModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4">
+            <h3 className="text-base font-bold text-white flex items-center gap-2 text-amber-400">
+              <Percent className="w-5 h-5" />
+              Create Discount Coupon
+            </h3>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  await createAdminCoupon(newCoupon);
+                  showToast(`Coupon ${newCoupon.couponCode} created!`);
+                  setShowAddCouponModal(false);
+                  loadAllData();
+                } catch {
+                  showToast('Failed to create coupon');
+                }
+              }}
+              className="space-y-3"
+            >
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Coupon Code</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. RADHE10"
+                  value={newCoupon.couponCode}
+                  onChange={(e) => setNewCoupon({ ...newCoupon, couponCode: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white uppercase font-mono"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-stone-300 font-semibold mb-1">Full Name</label>
+                  <label className="block text-xs text-slate-400 mb-1">Discount Value</label>
                   <input
-                    type="text"
+                    type="number"
                     required
-                    placeholder="e.g. Radheshyam Sharma"
-                    value={newUser.name}
-                    onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-stone-800 border border-stone-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                    value={newCoupon.discountValue}
+                    onChange={(e) => setNewCoupon({ ...newCoupon, discountValue: parseFloat(e.target.value) })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-stone-300 font-semibold mb-1">Email Address</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="e.g. partner@brijnidhi.org"
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-stone-800 border border-stone-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-stone-300 font-semibold mb-1">Role</label>
+                  <label className="block text-xs text-slate-400 mb-1">Type</label>
                   <select
-                    value={newUser.role}
-                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-stone-800 border border-stone-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                    value={newCoupon.discountType}
+                    onChange={(e) => setNewCoupon({ ...newCoupon, discountType: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                   >
-                    <option value="HOTEL_ADMIN">HOTEL_ADMIN (Property Partner)</option>
-                    <option value="RESTAURANT_MANAGER">RESTAURANT_MANAGER (Bhojanalaya Partner)</option>
-                    <option value="SYSTEM_ADMIN">SYSTEM_ADMIN (Co-Owner)</option>
-                    <option value="CUSTOMER">CUSTOMER (Devotee)</option>
+                    <option value="Percentage">Percentage (%)</option>
+                    <option value="Fixed">Fixed Amount (₹)</option>
                   </select>
                 </div>
-
-                <div className="flex items-center justify-end space-x-3 pt-3 border-t border-stone-800">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddUserModal(false)}
-                    className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-xl cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl shadow cursor-pointer"
-                  >
-                    Create Account
-                  </button>
-                </div>
-              </form>
-            </div>
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddCouponModal(false)}
+                  className="px-4 py-2 rounded-lg bg-slate-800 text-xs text-slate-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-xs font-bold text-slate-950"
+                >
+                  Save Coupon
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-      </main>
+        </div>
+      )}
     </div>
   );
 }

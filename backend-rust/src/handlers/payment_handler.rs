@@ -1,6 +1,12 @@
-use crate::models::TransactionItem;
+use crate::models::{PaymentRecord, RefundPaymentDto, TransactionItem};
 use crate::state::AppState;
-use axum::{extract::State, response::IntoResponse, Json};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+    Json,
+};
+use serde_json::json;
 use std::sync::{Arc, RwLock};
 
 pub async fn get_payments(State(state): State<Arc<RwLock<AppState>>>) -> impl IntoResponse {
@@ -8,8 +14,8 @@ pub async fn get_payments(State(state): State<Arc<RwLock<AppState>>>) -> impl In
     let real_stay_revenue: f64 = st
         .bookings
         .iter()
-        .filter(|b| b.status == "CONFIRMED" || b.status == "COMPLETED")
-        .map(|b| b.grand_total)
+        .filter(|b| b.status == "Confirmed" || b.status == "Completed" || b.status == "CONFIRMED")
+        .map(|b| if b.amount > 0.0 { b.amount } else { b.grand_total })
         .sum();
 
     let gross_volume = real_stay_revenue;
@@ -22,15 +28,24 @@ pub async fn get_payments(State(state): State<Arc<RwLock<AppState>>>) -> impl In
         .bookings
         .iter()
         .map(|b| {
-            let comm = (b.grand_total * (st.settings.platform_commission_pct / 100.0)).round();
+            let amt = if b.amount > 0.0 { b.amount } else { b.grand_total };
+            let comm = (amt * (st.settings.platform_commission_pct / 100.0)).round();
             TransactionItem {
                 id: format!("tx-{}", b.id),
-                transaction_type: "STAY_PAYMENT".into(),
-                guest: b.guest_name.clone(),
-                amount: b.grand_total,
+                transaction_type: format!("{}_PAYMENT", b.service_type.to_uppercase()),
+                guest: if !b.customer_name.is_empty() {
+                    b.customer_name.clone()
+                } else {
+                    b.guest_name.clone()
+                },
+                amount: amt,
                 commission: comm,
-                date: b.created_at.clone(),
-                status: if b.status == "CONFIRMED" || b.status == "COMPLETED" {
+                date: if !b.booking_date.is_empty() {
+                    b.booking_date.clone()
+                } else {
+                    b.created_at.clone()
+                },
+                status: if b.payment_status == "Paid" || b.status == "Confirmed" {
                     "SETTLED".into()
                 } else {
                     "PENDING".into()
@@ -39,7 +54,6 @@ pub async fn get_payments(State(state): State<Arc<RwLock<AppState>>>) -> impl In
         })
         .collect();
 
-    // Add confirmed bhojan reservations to the transaction ledger
     for res in &st.bhojan_reservations {
         let est_val = (res.thali_count as f64) * 250.0;
         let comm = (est_val * (st.settings.platform_commission_pct / 100.0)).round();
@@ -54,7 +68,37 @@ pub async fn get_payments(State(state): State<Arc<RwLock<AppState>>>) -> impl In
         });
     }
 
-    Json(serde_json::json!({
+    // Generate comprehensive PaymentRecord list
+    let mut payment_records: Vec<PaymentRecord> = st.payments.clone();
+    for b in &st.bookings {
+        let amt = if b.amount > 0.0 { b.amount } else { b.grand_total };
+        let cust = if !b.customer_name.is_empty() {
+            b.customer_name.clone()
+        } else {
+            b.guest_name.clone()
+        };
+        payment_records.push(PaymentRecord {
+            id: format!("PAY-{}", b.id),
+            booking_id: b.id.clone(),
+            customer: cust,
+            amount: amt,
+            payment_method: "UPI / Razorpay".into(),
+            transaction_id: format!("TXN_{}", b.id),
+            payment_date: if !b.booking_date.is_empty() {
+                b.booking_date.clone()
+            } else {
+                b.created_at.clone()
+            },
+            payment_status: b.payment_status.clone(),
+            refund_status: if b.status == "Cancelled" || b.status == "CANCELLED" {
+                Some("Full Refund Processed".into())
+            } else {
+                None
+            },
+        });
+    }
+
+    Json(json!({
         "success": true,
         "data": {
             "totalGrossBookings": gross_volume,
@@ -62,7 +106,34 @@ pub async fn get_payments(State(state): State<Arc<RwLock<AppState>>>) -> impl In
             "payoutsToHotels": payouts,
             "pendingPayouts": pending_payouts,
             "commissionRatePct": st.settings.platform_commission_pct,
-            "recentTransactions": transactions
+            "recentTransactions": transactions,
+            "payments": payment_records
         }
     }))
+}
+
+pub async fn refund_payment(
+    State(state): State<Arc<RwLock<AppState>>>,
+    Path(id): Path<String>,
+    Json(payload): Json<RefundPaymentDto>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let mut st = state.write().unwrap();
+    let reason = payload.reason.unwrap_or_else(|| "Customer cancellation".into());
+
+    st.log_audit(
+        "Accountant",
+        "REFUND_PROCESSED",
+        "Payment Management",
+        &id,
+        &format!("Processed refund for transaction '{}'. Reason: {}", id, reason),
+        "127.0.0.1",
+    );
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "success": true,
+            "message": format!("Refund processed successfully for {}", id)
+        })),
+    )
 }

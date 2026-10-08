@@ -562,5 +562,298 @@ export async function fetchPublicNotice() {
   }
 }
 
+// ============================================================================
+// Multi-Property Engine & Tourism Platform API Endpoints (Powered by Rust)
+// ============================================================================
+
+export async function fetchAdminProperties(params?: {
+  propertyType?: string;
+  status?: string;
+  search?: string;
+  sort?: string;
+}) {
+  try {
+    const query = new URLSearchParams();
+    if (params?.propertyType && params.propertyType !== 'all') query.set('propertyType', params.propertyType);
+    if (params?.status && params.status !== 'all') query.set('status', params.status);
+    if (params?.search) query.set('search', params.search);
+    if (params?.sort) query.set('sort', params.sort);
+
+    const res = await fetch(`${ADMIN_API_BASE_URL}/properties?${query.toString()}`, {
+      cache: 'no-store',
+      headers: getAdminHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to fetch properties');
+    const json = await res.json();
+    return json.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchAdminPropertyById(id: string) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/properties/${id}`, {
+    cache: 'no-store',
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to fetch property');
+  const json = await res.json();
+  return json.data;
+}
+
+export async function createAdminProperty(data: any) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/properties`, {
+    method: 'POST',
+    headers: getAdminHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to create property');
+  return res.json();
+}
+
+export async function updateAdminProperty(id: string, data: any) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/properties/${id}`, {
+    method: 'PUT',
+    headers: getAdminHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to update property');
+  return res.json();
+}
+
+export async function deleteAdminProperty(id: string) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/properties/${id}`, {
+    method: 'DELETE',
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to delete property');
+  return res.json();
+}
+
+export async function approveAdminProperty(id: string) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/properties/${id}/approve`, {
+    method: 'POST',
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to approve property');
+  return res.json();
+}
+
+export async function rejectAdminProperty(id: string, reason: string) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/properties/${id}/reject`, {
+    method: 'POST',
+    headers: getAdminHeaders(),
+    body: JSON.stringify({ reason })
+  });
+  if (!res.ok) throw new Error('Failed to reject property');
+  return res.json();
+}
+
+export async function toggleStatusAdminProperty(id: string) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/properties/${id}/toggle-status`, {
+    method: 'POST',
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to toggle property status');
+  return res.json();
+}
+
+// Transport & Drivers
+export async function fetchAdminVehicles() {
+  try {
+    const res = await fetch(`${ADMIN_API_BASE_URL}/transport/vehicles`, {
+      cache: 'no-store',
+      headers: getAdminHeaders()
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchAdminDrivers() {
+  try {
+    const res = await fetch(`${ADMIN_API_BASE_URL}/transport/drivers`, {
+      cache: 'no-store',
+      headers: getAdminHeaders()
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function createAdminDriver(data: any) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/transport/drivers`, {
+    method: 'POST',
+    headers: getAdminHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to add driver');
+  return res.json();
+}
+
+export async function assignAdminVehicle(driverId: string, vehicleId?: string) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/transport/drivers/${driverId}/assign`, {
+    method: 'POST',
+    headers: getAdminHeaders(),
+    body: JSON.stringify({ vehicleId })
+  });
+  if (!res.ok) throw new Error('Failed to assign vehicle');
+  return res.json();
+}
+
+export async function toggleStatusAdminDriver(driverId: string) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/transport/drivers/${driverId}/toggle-status`, {
+    method: 'POST',
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to toggle driver status');
+  return res.json();
+}
+
+export async function deleteAdminDriver(driverId: string) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/transport/drivers/${driverId}`, {
+    method: 'DELETE',
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to delete driver');
+  return res.json();
+}
+
+// Customers
+export async function fetchAdminCustomers() {
+  try {
+    const res = await fetch(`${ADMIN_API_BASE_URL}/customers`, {
+      cache: 'no-store',
+      headers: getAdminHeaders()
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function createAdminCustomer(data: any) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/customers`, {
+    method: 'POST',
+    headers: getAdminHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to create customer');
+  return res.json();
+}
+
+export async function deleteAdminCustomer(id: string) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/customers/${id}`, {
+    method: 'DELETE',
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to delete customer');
+  return res.json();
+}
+
+// Payments & Refunds
+export async function refundAdminPayment(id: string, reason?: string) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/payments/${id}/refund`, {
+    method: 'POST',
+    headers: getAdminHeaders(),
+    body: JSON.stringify({ reason })
+  });
+  if (!res.ok) throw new Error('Failed to process refund');
+  return res.json();
+}
+
+// Reviews
+export async function fetchAdminReviews() {
+  try {
+    const res = await fetch(`${ADMIN_API_BASE_URL}/reviews`, {
+      cache: 'no-store',
+      headers: getAdminHeaders()
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function updateAdminReviewStatus(id: string, status: string) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/reviews/${id}`, {
+    method: 'PUT',
+    headers: getAdminHeaders(),
+    body: JSON.stringify({ status })
+  });
+  if (!res.ok) throw new Error('Failed to update review status');
+  return res.json();
+}
+
+export async function deleteAdminReview(id: string) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/reviews/${id}`, {
+    method: 'DELETE',
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to delete review');
+  return res.json();
+}
+
+// Coupons & Offers
+export async function fetchAdminCoupons() {
+  try {
+    const res = await fetch(`${ADMIN_API_BASE_URL}/coupons`, {
+      cache: 'no-store',
+      headers: getAdminHeaders()
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function createAdminCoupon(data: any) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/coupons`, {
+    method: 'POST',
+    headers: getAdminHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to create coupon');
+  return res.json();
+}
+
+export async function deleteAdminCoupon(id: string) {
+  const res = await fetch(`${ADMIN_API_BASE_URL}/coupons/${id}`, {
+    method: 'DELETE',
+    headers: getAdminHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to delete coupon');
+  return res.json();
+}
+
+// Reports
+export async function fetchAdminReports(reportType?: string) {
+  try {
+    const q = reportType ? `?report_type=${reportType}` : '';
+    const res = await fetch(`${ADMIN_API_BASE_URL}/reports${q}`, {
+      cache: 'no-store',
+      headers: getAdminHeaders()
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data;
+  } catch {
+    return null;
+  }
+}
+
+
 
 
