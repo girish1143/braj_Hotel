@@ -191,17 +191,6 @@ export default function AdminDashboardPage() {
       vehicles: []
     }
   });
-          pricePerHour: 150,
-          pricePerKm: 15,
-          dailyPrice: 900,
-          availability: true,
-          status: 'Available',
-          images: [],
-          documents: ['Registration Certificate', 'Commercial Permit']
-        }
-      ]
-    }
-  });
 
   // Selected Property for View / Edit Modal
   const [selectedProperty, setSelectedProperty] = useState<any | null>(null);
@@ -578,6 +567,17 @@ export default function AdminDashboardPage() {
           <div className="px-3 pt-4 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
             Operations & Finance
           </div>
+
+          <Link
+            href="/hotel-admin"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30"
+          >
+            <BedDouble className="w-4 h-4 shrink-0 text-amber-400" />
+            <span>Front Desk PMS & Tape Chart</span>
+            <span className="ml-auto text-[10px] bg-amber-500 text-slate-950 font-bold px-1.5 py-0.5 rounded">
+              Express
+            </span>
+          </Link>
 
           <button
             onClick={() => setActiveTab('bookings')}
