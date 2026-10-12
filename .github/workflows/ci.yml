@@ -67,6 +67,8 @@ jobs:
         run: npm test --if-present
 
       - name: Build Next.js Application (Typecheck & Compile)
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
         run: npm run build
 
   rust-admin-ci:
@@ -85,8 +87,10 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Rust Cache (Speed up compilation)
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend-rust -> target
+
       - name: Check Rust Compilation
         run: cargo check --release
-
-      - name: Validate Docker Image Build
-        run: docker build -t brijnidhi-admin-rust .

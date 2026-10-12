@@ -52,6 +52,7 @@ jobs:
   deploy-to-ec2:
     name: Deploy to AWS EC2
     needs: pre-deploy-validation
+    if: ${{ secrets.EC2_HOST != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Execute Remote Deployment via SSH
@@ -172,3 +173,25 @@ jobs:
             fi
 
             echo "🎉 Deployment successfully completed!"
+
+  notify-missing-secrets:
+    name: Deployment Configuration Notice
+    needs: pre-deploy-validation
+    if: ${{ secrets.EC2_HOST == '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report Missing EC2 Secrets
+        run: |
+          echo "### ⚠️ CD Deployment Skipped: Missing GitHub Secrets" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Automated SSH deployment to AWS EC2 was skipped because \`EC2_HOST\` secret is not yet configured in your GitHub repository." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Required Secrets to enable automated EC2 deployment:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`EC2_HOST\`: Public IPv4 address or DNS of your EC2 instance." >> $GITHUB_STEP_SUMMARY
+          echo "- \`EC2_USERNAME\`: SSH username (e.g., \`ubuntu\` or \`ec2-user\`)." >> $GITHUB_STEP_SUMMARY
+          echo "- \`EC2_SSH_KEY\`: Full private key (\`.pem\` file content)." >> $GITHUB_STEP_SUMMARY
+          echo "- \`APP_DIR\`: *(Optional)* Path on EC2 server (defaults to \`~/brijnidhi\` or \`~/braj_Hotel\`)." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "👉 Go to: **GitHub Repo -> Settings -> Secrets and variables -> Actions -> New repository secret**." >> $GITHUB_STEP_SUMMARY
+          echo "Notice: All code validated and pre-deployment checks passed successfully."
+
