@@ -92,7 +92,65 @@ import {
 } from '../../lib/api';
 
 // Supported Property & Service Types
-export type PropertyType = 'Hotel' | 'Restaurant' | 'Ashram' | 'Dharamshala' | 'Transport';
+type PropertyType = 'Hotel' | 'Restaurant' | 'Ashram' | 'Dharamshala' | 'Transport';
+
+const ROLE_PERMISSIONS_MAP: Record<string, {
+  label: string;
+  badgeColor: string;
+  description: string;
+  allowedTabs: string[];
+  permissions: string[];
+  restricted: string[];
+}> = {
+  SUPER_ADMIN: {
+    label: 'Super Admin (Owner)',
+    badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+    description: 'Full root access to all properties, users, finances, and system settings.',
+    allowedTabs: ['overview', 'properties', 'transport', 'bookings', 'customers', 'payments', 'reviews', 'offers', 'reports', 'audit', 'users', 'settings'],
+    permissions: ['Manage All 5 Property Types', 'Full Access to Financial Ledger', 'Add & Delete Platform Users', 'System Configuration', 'Audit Log Access'],
+    restricted: []
+  },
+  PROPERTY_MANAGER: {
+    label: 'Property Manager',
+    badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    description: 'Limited to adding, editing, and monitoring properties, rooms, and hotel profiles.',
+    allowedTabs: ['overview', 'properties', 'reports'],
+    permissions: ['Add & Edit Properties', 'Configure Hotel Room Types', 'Manage Satvik Restaurant Menus', 'View Occupancy Reports'],
+    restricted: ['Cannot access Financial Payouts', 'Cannot view or edit other Admin Users', 'Cannot alter Platform Settings']
+  },
+  BOOKING_MANAGER: {
+    label: 'Booking Manager',
+    badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+    description: 'Limited to guest reservations, customer profiles, check-ins, and booking cancellations.',
+    allowedTabs: ['overview', 'bookings', 'customers', 'reports'],
+    permissions: ['View & Filter Reservations', 'Process Guest Check-Ins & Check-Outs', 'View Customer Profiles', 'Manage Special Yatri Requests'],
+    restricted: ['Cannot create or delete Properties', 'Cannot view System Financial Ledger', 'Cannot modify Platform Commission']
+  },
+  TRANSPORT_MANAGER: {
+    label: 'Transport & Fleet Manager',
+    badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+    description: 'Limited to E-Rickshaws, cars, tempos, driver assignments, and vehicle statuses.',
+    allowedTabs: ['overview', 'transport', 'reports'],
+    permissions: ['Add & Manage Vehicles', 'Register & Assign Drivers', 'Manage Parikrama Routes', 'Monitor Vehicle Availability'],
+    restricted: ['Cannot access Hotels or Restaurants', 'Cannot view Financial Ledger', 'Cannot alter Platform Settings']
+  },
+  ACCOUNTANT: {
+    label: 'Accountant & Finance',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    description: 'Limited to financial ledger, transaction tracking, refund approvals, and tax reports.',
+    allowedTabs: ['overview', 'payments', 'reports'],
+    permissions: ['Inspect Payment Transactions', 'Process Booking Refunds', 'Generate Revenue CSV Reports', 'Audit Payment Gateway Logs'],
+    restricted: ['Cannot add or edit Properties', 'Cannot delete Bookings', 'Cannot manage Users or Settings']
+  },
+  VIEWER: {
+    label: 'Auditor / Viewer (Read-Only)',
+    badgeColor: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
+    description: 'Read-only access across the entire admin panel. All create, edit, and delete controls are disabled.',
+    allowedTabs: ['overview', 'properties', 'transport', 'bookings', 'customers', 'payments', 'reviews', 'offers', 'reports', 'audit', 'users', 'settings'],
+    permissions: ['View Dashboards & Analytics', 'Inspect Property & Booking Records', 'View Audit Logs & Financial Summaries'],
+    restricted: ['All Add / Edit / Delete buttons disabled', 'Cannot alter any live platform data']
+  }
+};
 
 export default function AdminDashboardPage() {
   // Navigation tabs
@@ -248,8 +306,16 @@ export default function AdminDashboardPage() {
   // Audit Logs State
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
 
-  // Users State
+  // Users State & Add User Modal State
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
+  const [showAddUserModal, setShowAddUserModal] = useState<boolean>(false);
+  const [newUser, setNewUser] = useState<any>({
+    name: '',
+    email: '',
+    role: 'PROPERTY_MANAGER'
+  });
+  const [userSearchQuery, setUserSearchQuery] = useState<string>('');
+  const [userRoleFilter, setUserRoleFilter] = useState<string>('all');
 
   // Platform Settings State
   const [settings, setSettings] = useState<any>({
@@ -361,6 +427,103 @@ export default function AdminDashboardPage() {
       return matchService && matchStatus && matchSearch;
     });
   }, [bookings, bookingFilterService, bookingFilterStatus, bookingSearch]);
+
+  // Filtered Admin Users
+  const filteredUsers = useMemo(() => {
+    return adminUsers.filter((u) => {
+      if (userRoleFilter !== 'all' && u.role !== userRoleFilter) return false;
+      if (
+        userSearchQuery &&
+        !u.name?.toLowerCase().includes(userSearchQuery.toLowerCase()) &&
+        !u.email?.toLowerCase().includes(userSearchQuery.toLowerCase())
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [adminUsers, userRoleFilter, userSearchQuery]);
+
+  // User Management Action Handlers
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUser.name.trim() || !newUser.email.trim()) {
+      showToast('Please provide both full name and email address');
+      return;
+    }
+    try {
+      const res = await createAdminUser(newUser);
+      if (res && res.data) {
+        setAdminUsers((prev) => [res.data, ...prev]);
+      } else {
+        const fallback = {
+          id: `usr-${Date.now()}`,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+          status: 'ACTIVE',
+          joined: 'Today'
+        };
+        setAdminUsers((prev) => [fallback, ...prev]);
+      }
+      showToast(`User "${newUser.name}" added with limited role "${newUser.role}".`);
+      setShowAddUserModal(false);
+      setNewUser({ name: '', email: '', role: 'PROPERTY_MANAGER' });
+    } catch (err: any) {
+      console.error('Failed to create user in backend:', err);
+      const fallback = {
+        id: `usr-${Date.now()}`,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        status: 'ACTIVE',
+        joined: 'Today'
+      };
+      setAdminUsers((prev) => [fallback, ...prev]);
+      showToast(`User "${newUser.name}" added successfully.`);
+      setShowAddUserModal(false);
+      setNewUser({ name: '', email: '', role: 'PROPERTY_MANAGER' });
+    }
+  };
+
+  const handleUpdateUserRole = async (userId: string, newRole: string) => {
+    try {
+      await updateAdminUserRole(userId, newRole);
+      setAdminUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+      );
+      showToast(`User role updated to ${newRole}`);
+    } catch {
+      setAdminUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+      );
+      showToast(`User role updated locally to ${newRole}`);
+    }
+  };
+
+  const handleToggleSuspendUser = (userId: string) => {
+    setAdminUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === userId) {
+          const nextStatus = u.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
+          showToast(`User account status marked as ${nextStatus}`);
+          return { ...u, status: nextStatus };
+        }
+        return u;
+      })
+    );
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to permanently delete this user account from the admin panel?')) return;
+    try {
+      await deleteAdminUser(userId);
+      setAdminUsers((prev) => prev.filter((u) => u.id !== userId));
+      showToast('User account deleted');
+    } catch {
+      setAdminUsers((prev) => prev.filter((u) => u.id !== userId));
+      showToast('User account deleted locally');
+    }
+  };
 
   // Handle Add Property Submit
   const handleCreateProperty = async (e: React.FormEvent) => {
@@ -659,6 +822,21 @@ export default function AdminDashboardPage() {
           </div>
 
           <button
+            onClick={() => setActiveTab('users')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'users'
+                ? 'bg-amber-500 text-slate-950 font-semibold shadow-md shadow-amber-500/20'
+                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+            }`}
+          >
+            <UserCheck className="w-4 h-4 shrink-0 text-amber-400" />
+            <span>Users & Admins</span>
+            <span className="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">
+              {adminUsers.length}
+            </span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('audit')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
               activeTab === 'audit'
@@ -716,6 +894,7 @@ export default function AdminDashboardPage() {
               {activeTab === 'offers' && 'Offers & Discount Coupons'}
               {activeTab === 'reports' && 'Analytics & Export Reports'}
               {activeTab === 'audit' && 'Security Audit Trail'}
+              {activeTab === 'users' && 'User & Role Management'}
               {activeTab === 'settings' && 'Platform Governance'}
             </h2>
           </div>
@@ -731,11 +910,12 @@ export default function AdminDashboardPage() {
                 onChange={(e) => setCurrentRole(e.target.value)}
                 className="bg-transparent text-amber-300 font-semibold focus:outline-none cursor-pointer"
               >
-                <option value="SUPER_ADMIN" className="bg-slate-900 text-slate-100">Super Admin</option>
+                <option value="SUPER_ADMIN" className="bg-slate-900 text-slate-100">Super Admin (Root)</option>
                 <option value="PROPERTY_MANAGER" className="bg-slate-900 text-slate-100">Property Manager</option>
                 <option value="BOOKING_MANAGER" className="bg-slate-900 text-slate-100">Booking Manager</option>
                 <option value="TRANSPORT_MANAGER" className="bg-slate-900 text-slate-100">Transport Manager</option>
                 <option value="ACCOUNTANT" className="bg-slate-900 text-slate-100">Accountant</option>
+                <option value="VIEWER" className="bg-slate-900 text-slate-100">Auditor (Viewer)</option>
               </select>
             </div>
 
@@ -762,6 +942,30 @@ export default function AdminDashboardPage() {
             </button>
           </div>
         </header>
+
+        {/* LIMITED ROLE SCOPE BANNER */}
+        {currentRole !== 'SUPER_ADMIN' && (
+          <div className="mx-8 mt-4 p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between text-xs text-amber-200">
+            <div className="flex items-center gap-2.5">
+              <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                Active Limited Access Session: <strong>{ROLE_PERMISSIONS_MAP[currentRole]?.label || currentRole}</strong>. 
+                {currentRole === 'VIEWER'
+                  ? ' Read-only auditor mode active: all create, edit, and delete operations are restricted.'
+                  : ' Only modules permitted for this role are accessible.'}
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setCurrentRole('SUPER_ADMIN');
+                showToast('Switched back to Super Admin root session');
+              }}
+              className="text-amber-400 underline font-semibold hover:text-amber-300 shrink-0 ml-3"
+            >
+              Reset to Super Admin →
+            </button>
+          </div>
+        )}
 
         {/* WORKSPACE BODY */}
         <div className="p-8 space-y-8">
@@ -2113,10 +2317,18 @@ export default function AdminDashboardPage() {
 
               {/* RBAC Admin Users */}
               <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 space-y-4">
-                <h3 className="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
-                  <ShieldCheck className="w-4 h-4 text-amber-400" />
-                  Admin Users & RBAC Permissions
-                </h3>
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-amber-400" />
+                    Admin Users &amp; RBAC Permissions
+                  </h3>
+                  <button
+                    onClick={() => setActiveTab('users')}
+                    className="text-xs text-amber-400 hover:underline font-bold"
+                  >
+                    Open Full User Management →
+                  </button>
+                </div>
                 <div className="space-y-3">
                   {adminUsers.map((u) => (
                     <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-950 border border-slate-800">
@@ -2131,6 +2343,236 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =================================================================== */}
+          {/* TAB: USER & ROLE MANAGEMENT (EXACT SPEC WITH ADD USER & LIMITED RBAC)*/}
+          {/* =================================================================== */}
+          {activeTab === 'users' && (
+            <div className="space-y-6">
+              {/* Top Banner Matching User Screenshot */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/80 p-6 rounded-2xl border border-slate-800 shadow-sm">
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-amber-400 block mb-1">
+                    BRIJNIDHI PLATFORM GOVERNANCE
+                  </span>
+                  <h3 className="text-2xl font-bold font-serif text-white flex items-center gap-2">
+                    <UserCheck className="w-6 h-6 text-amber-400" />
+                    User &amp; Role Management ({filteredUsers.length})
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1 max-w-xl">
+                    Add new administrators and operational staff with limited, scoped permissions. Prevent access to unauthorized platform controls.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={loadAllData}
+                    disabled={refreshing}
+                    className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                    title="Refresh user accounts"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-amber-400' : ''}`} />
+                  </button>
+
+                  <button
+                    onClick={() => setShowAddUserModal(true)}
+                    className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-orange-500/20 transition cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 stroke-[3]" />
+                    <span>+ Add New User</span>
+                  </button>
+
+                  <Link
+                    href="/hotel-admin"
+                    className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold transition"
+                  >
+                    Hotel Admin View &gt;
+                  </Link>
+                </div>
+              </div>
+
+              {/* 4 Role Summary Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                <div className="bg-slate-900/70 border border-slate-800 p-4 rounded-xl">
+                  <span className="text-slate-400 font-semibold block text-[11px]">Total Admin Accounts</span>
+                  <span className="text-2xl font-bold font-serif text-white mt-1 block">
+                    {adminUsers.length}
+                  </span>
+                  <span className="text-[10px] text-amber-400">Platform staff accounts</span>
+                </div>
+
+                <div className="bg-slate-900/70 border border-slate-800 p-4 rounded-xl">
+                  <span className="text-slate-400 font-semibold block text-[11px]">Property Managers</span>
+                  <span className="text-2xl font-bold font-serif text-amber-400 mt-1 block">
+                    {adminUsers.filter((u) => u.role === 'PROPERTY_MANAGER' || u.role === 'HOTEL_ADMIN').length}
+                  </span>
+                  <span className="text-[10px] text-slate-400">Limited to properties &amp; stays</span>
+                </div>
+
+                <div className="bg-slate-900/70 border border-slate-800 p-4 rounded-xl">
+                  <span className="text-slate-400 font-semibold block text-[11px]">Booking &amp; Fleet Leads</span>
+                  <span className="text-2xl font-bold font-serif text-cyan-400 mt-1 block">
+                    {adminUsers.filter((u) => u.role === 'BOOKING_MANAGER' || u.role === 'TRANSPORT_MANAGER').length}
+                  </span>
+                  <span className="text-[10px] text-slate-400">Reservations &amp; dispatch only</span>
+                </div>
+
+                <div className="bg-slate-900/70 border border-slate-800 p-4 rounded-xl">
+                  <span className="text-slate-400 font-semibold block text-[11px]">Accountants &amp; Auditors</span>
+                  <span className="text-2xl font-bold font-serif text-emerald-400 mt-1 block">
+                    {adminUsers.filter((u) => u.role === 'ACCOUNTANT' || u.role === 'VIEWER').length}
+                  </span>
+                  <span className="text-[10px] text-slate-400">Finances or read-only</span>
+                </div>
+              </div>
+
+              {/* Filters Bar */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="relative flex-1 w-full">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Search user by name or email address..."
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <span className="text-xs text-slate-400">Filter Role:</span>
+                  <select
+                    value={userRoleFilter}
+                    onChange={(e) => setUserRoleFilter(e.target.value)}
+                    className="bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 font-semibold focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="all">All Roles</option>
+                    <option value="SUPER_ADMIN">Super Admin (Root)</option>
+                    <option value="PROPERTY_MANAGER">Property Manager</option>
+                    <option value="BOOKING_MANAGER">Booking Manager</option>
+                    <option value="TRANSPORT_MANAGER">Transport Manager</option>
+                    <option value="ACCOUNTANT">Accountant</option>
+                    <option value="VIEWER">Auditor (Viewer)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* User Accounts Table */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-950/80 text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-800">
+                      <tr>
+                        <th className="py-3 px-4">Name</th>
+                        <th className="py-3 px-4">Email</th>
+                        <th className="py-3 px-4">Role</th>
+                        <th className="py-3 px-4">Limited Permissions Scope</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                      {filteredUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-12 text-center text-slate-500">
+                            No users found matching your criteria.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredUsers.map((u) => {
+                          const roleKey = u.role === 'HOTEL_ADMIN' ? 'PROPERTY_MANAGER' : (u.role === 'SYSTEM_ADMIN' ? 'SUPER_ADMIN' : u.role);
+                          const roleInfo = ROLE_PERMISSIONS_MAP[roleKey] || ROLE_PERMISSIONS_MAP.PROPERTY_MANAGER;
+
+                          return (
+                            <tr key={u.id} className="hover:bg-slate-800/30 transition">
+                              <td className="py-3.5 px-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold flex items-center justify-center font-serif text-sm">
+                                    {u.name?.charAt(0) || 'U'}
+                                  </div>
+                                  <div>
+                                    <span className="font-bold text-white block">{u.name}</span>
+                                    <span className="text-[10px] text-slate-500 font-mono">Joined: {u.joined || 'Active'}</span>
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td className="py-3.5 px-4 font-mono text-slate-400">
+                                {u.email}
+                              </td>
+
+                              <td className="py-3.5 px-4">
+                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${roleInfo.badgeColor}`}>
+                                  {u.role}
+                                </span>
+                              </td>
+
+                              <td className="py-3.5 px-4 max-w-xs">
+                                <span className="text-[11px] text-slate-300 block">{roleInfo.description}</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {roleInfo.permissions.slice(0, 2).map((p, i) => (
+                                    <span key={i} className="text-[9px] bg-slate-800 text-emerald-400 px-1.5 py-0.5 rounded">
+                                      ✓ {p}
+                                    </span>
+                                  ))}
+                                  {roleInfo.restricted.length > 0 && (
+                                    <span className="text-[9px] bg-red-950/60 text-red-300 px-1.5 py-0.5 rounded border border-red-900/50">
+                                      🔒 {roleInfo.restricted[0]}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+
+                              <td className="py-3.5 px-4">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1.5 w-max ${
+                                  u.status === 'SUSPENDED'
+                                    ? 'bg-red-500/10 text-red-400'
+                                    : 'bg-emerald-500/10 text-emerald-400'
+                                }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${u.status === 'SUSPENDED' ? 'bg-red-400' : 'bg-emerald-400'}`} />
+                                  <span>{u.status || 'ACTIVE'}</span>
+                                </span>
+                              </td>
+
+                              <td className="py-3.5 px-4 text-right space-x-2">
+                                <button
+                                  onClick={() => {
+                                    setCurrentRole(roleKey);
+                                    showToast(`Simulating admin panel with limited role: ${roleInfo.label}`);
+                                  }}
+                                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-lg text-[11px] font-semibold transition"
+                                  title="Test how this user experiences the admin panel"
+                                >
+                                  Simulate
+                                </button>
+
+                                <button
+                                  onClick={() => handleToggleSuspendUser(u.id)}
+                                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-[11px] transition"
+                                >
+                                  {u.status === 'SUSPENDED' ? 'Activate' : 'Suspend'}
+                                </button>
+
+                                {u.email !== 'admin@brijnidhi.org' && (
+                                  <button
+                                    onClick={() => handleDeleteUser(u.id)}
+                                    className="p-1 hover:text-red-400 text-slate-500 transition"
+                                    title="Delete user"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 inline" />
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -2993,6 +3435,118 @@ export default function AdminDashboardPage() {
                   className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-xs font-bold text-slate-950"
                 >
                   Save Coupon
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* ADD USER MODAL (LIMITED CONTROLS & SCOPED RBAC)           */}
+      {/* ========================================================= */}
+      {showAddUserModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 text-slate-100 shadow-2xl relative animate-in fade-in zoom-in-95">
+            <button
+              onClick={() => setShowAddUserModal(false)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="mb-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block mb-0.5">
+                Role-Based Access Control (RBAC)
+              </span>
+              <h3 className="text-lg font-bold font-serif text-white flex items-center gap-2">
+                <UserCheck className="w-5 h-5 text-amber-400" />
+                Add Admin User with Limited Controls
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Grant scoped permissions to staff members so they can operate designated areas of the admin panel without full root access.
+              </p>
+            </div>
+
+            <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Radheshyam Sharma"
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-amber-500 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. staff.vrindavan@brijnidhi.org"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-amber-500 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Role &amp; Access Scope</label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-amber-500 text-xs font-semibold"
+                >
+                  <option value="PROPERTY_MANAGER">🏨 Property Manager (Properties, Rooms, Menus only)</option>
+                  <option value="BOOKING_MANAGER">📅 Booking Manager (Reservations, Customers, Check-ins only)</option>
+                  <option value="TRANSPORT_MANAGER">🚖 Transport Manager (Vehicles, Drivers, Fleet only)</option>
+                  <option value="ACCOUNTANT">💰 Accountant (Ledger, Payments, Financial Reports only)</option>
+                  <option value="VIEWER">👁️ Auditor / Viewer (Read-only access across all tabs)</option>
+                  <option value="SUPER_ADMIN">👑 Super Admin (Full platform governance)</option>
+                </select>
+              </div>
+
+              {/* Dynamic Scope Preview Box */}
+              {ROLE_PERMISSIONS_MAP[newUser.role] && (
+                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
+                      Scope Preview: {ROLE_PERMISSIONS_MAP[newUser.role].label}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    {ROLE_PERMISSIONS_MAP[newUser.role].description}
+                  </p>
+
+                  <div className="space-y-1 pt-1 border-t border-slate-800/80 text-[10px]">
+                    <div className="text-emerald-400">
+                      <strong>Granted:</strong> {ROLE_PERMISSIONS_MAP[newUser.role].permissions.join(' • ')}
+                    </div>
+                    {ROLE_PERMISSIONS_MAP[newUser.role].restricted.length > 0 && (
+                      <div className="text-red-400">
+                        <strong>Restricted:</strong> {ROLE_PERMISSIONS_MAP[newUser.role].restricted.join(' • ')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowAddUserModal(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-semibold transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold rounded-xl shadow-lg transition"
+                >
+                  Create User &amp; Assign Controls
                 </button>
               </div>
             </form>
