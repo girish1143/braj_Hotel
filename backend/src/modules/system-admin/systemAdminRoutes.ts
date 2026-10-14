@@ -12,6 +12,7 @@ import {
 } from '../../db/bhojanRepository';
 import { getAllBookings, updateBookingStatus, deleteBooking } from '../../routes/bookingRoutes';
 import { Bhojanalaya, BhojanReservation, BookingResponse } from '../../types';
+import { query, isRdsConnected } from '../../db/rds';
 
 // In-memory state for admin actions
 export interface AdminHotelItem {
@@ -869,7 +870,24 @@ router.delete('/bookings/:id', (req: Request, res: Response) => {
 // 5. USERS & DEVOTEES MANAGEMENT
 // ==========================================
 
-router.get('/users', (req: Request, res: Response) => {
+router.get('/users', async (req: Request, res: Response) => {
+  if (isRdsConnected()) {
+    try {
+      const dbUsers = await query<any[]>(
+        'SELECT id, name, email, phone, role, status, DATE_FORMAT(created_at, "%d %b %Y") as joined FROM users ORDER BY created_at DESC'
+      );
+      if (dbUsers && dbUsers.length > 0) {
+        return res.json({
+          success: true,
+          total: dbUsers.length,
+          data: dbUsers
+        });
+      }
+    } catch (err: any) {
+      console.warn('[RDS Admin] Error fetching users from RDS:', err.message);
+    }
+  }
+
   res.json({
     success: true,
     total: adminUsers.length,
@@ -877,8 +895,8 @@ router.get('/users', (req: Request, res: Response) => {
   });
 });
 
-router.post('/users', (req: Request, res: Response) => {
-  const { name, email, role = 'CUSTOMER', status = 'ACTIVE' } = req.body;
+router.post('/users', async (req: Request, res: Response) => {
+  const { name, email, phone, role = 'CUSTOMER', status = 'ACTIVE' } = req.body;
   if (!name || !email) {
     return res.status(400).json({ success: false, message: 'Name and email are required' });
   }
@@ -887,12 +905,24 @@ router.post('/users', (req: Request, res: Response) => {
     id: `usr-${Date.now().toString(36)}`,
     name: name.trim(),
     email: email.trim().toLowerCase(),
+    phone: phone || null,
     role,
     status,
     joined: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
   };
 
   adminUsers.unshift(newUser);
+
+  if (isRdsConnected()) {
+    try {
+      await query(
+        'INSERT INTO users (id, name, email, phone, role, status) VALUES (?, ?, ?, ?, ?, ?)',
+        [newUser.id, newUser.name, newUser.email, newUser.phone, newUser.role, newUser.status]
+      );
+    } catch (err: any) {
+      console.warn('[RDS Admin] Error inserting user into RDS:', err.message);
+    }
+  }
 
   logAudit(
     req.user?.name || 'Project Owner',

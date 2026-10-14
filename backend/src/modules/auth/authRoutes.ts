@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { query, isRdsConnected } from '../../db/rds';
 
 const router = Router();
 
@@ -107,7 +108,7 @@ router.post('/verify-otp', (req: Request, res: Response) => {
 });
 
 // POST /api/auth/login
-router.post('/login', (req: Request, res: Response) => {
+router.post('/login', async (req: Request, res: Response) => {
   const { identifier, phone, email, name, otpVerified } = req.body;
   const loginKey = (identifier || phone || email || '').trim().toLowerCase();
 
@@ -129,10 +130,35 @@ router.post('/login', (req: Request, res: Response) => {
     });
   }
 
-  // Look for existing user or create on-the-fly authenticated pilgrim session
-  let user = registeredUsers.find(
-    (u) => u.email.toLowerCase() === loginKey || u.phone.includes(loginKey)
-  );
+  // Look for existing user in RDS if connected
+  let user: AuthUserRecord | undefined;
+  if (isRdsConnected()) {
+    try {
+      const rows = await query<any[]>(
+        'SELECT id, name, email, phone, role, status FROM users WHERE email = ? OR phone = ? LIMIT 1',
+        [loginKey, loginKey]
+      );
+      if (rows && rows.length > 0) {
+        const row = rows[0];
+        user = {
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          phone: row.phone || loginKey,
+          role: row.role
+        };
+      }
+    } catch (err: any) {
+      console.warn('[RDS Auth] Error checking user in RDS:', err.message);
+    }
+  }
+
+  // Fallback to in-memory store
+  if (!user) {
+    user = registeredUsers.find(
+      (u) => u.email.toLowerCase() === loginKey || u.phone.includes(loginKey)
+    );
+  }
 
   if (!user) {
     const isPhone = /^\d+$/.test(loginKey.replace(/[^0-9]/g, ''));
@@ -144,6 +170,19 @@ router.post('/login', (req: Request, res: Response) => {
       role: 'CUSTOMER'
     };
     registeredUsers.push(user);
+
+    // Save to RDS database if connected
+    if (isRdsConnected()) {
+      try {
+        await query(
+          'INSERT INTO users (id, name, email, phone, role, status) VALUES (?, ?, ?, ?, ?, ?)',
+          [user.id, user.name, user.email, user.phone, user.role, 'ACTIVE']
+        );
+        console.log(`👤 [RDS Auth] Devotee '${user.name}' (${user.email}) saved to AWS RDS.`);
+      } catch (err: any) {
+        console.warn('[RDS Auth] Failed to insert user into RDS:', err.message);
+      }
+    }
   }
 
   res.json({
@@ -161,7 +200,7 @@ router.post('/login', (req: Request, res: Response) => {
 });
 
 // POST /api/auth/register
-router.post('/register', (req: Request, res: Response) => {
+router.post('/register', async (req: Request, res: Response) => {
   const { name, email, phone } = req.body;
 
   if (!name || (!email && !phone)) {
@@ -169,6 +208,27 @@ router.post('/register', (req: Request, res: Response) => {
       success: false,
       message: 'Name and email or mobile number are required to register.'
     });
+  }
+
+  const cleanEmail = email?.trim().toLowerCase() || `${phone}@yatri.brijnidhi.org`;
+  const cleanPhone = phone?.trim() || null;
+
+  // Check RDS if connected
+  if (isRdsConnected()) {
+    try {
+      const rows = await query<any[]>(
+        'SELECT id FROM users WHERE email = ? OR (phone IS NOT NULL AND phone = ?) LIMIT 1',
+        [cleanEmail, cleanPhone]
+      );
+      if (rows && rows.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'An account already exists with this phone or email in database. Please sign in.'
+        });
+      }
+    } catch (err: any) {
+      console.warn('[RDS Auth] Error checking existing user in RDS:', err.message);
+    }
   }
 
   const existing = registeredUsers.find(
@@ -185,12 +245,25 @@ router.post('/register', (req: Request, res: Response) => {
   const newUser: AuthUserRecord = {
     id: `usr-${Date.now()}`,
     name: name.trim(),
-    email: email?.trim().toLowerCase() || `${phone}@yatri.brijnidhi.org`,
-    phone: phone?.trim() || 'Not provided',
+    email: cleanEmail,
+    phone: cleanPhone || 'Not provided',
     role: 'CUSTOMER'
   };
 
   registeredUsers.push(newUser);
+
+  // Persist to RDS MySQL table
+  if (isRdsConnected()) {
+    try {
+      await query(
+        'INSERT INTO users (id, name, email, phone, role, status) VALUES (?, ?, ?, ?, ?, ?)',
+        [newUser.id, newUser.name, newUser.email, newUser.phone, newUser.role, 'ACTIVE']
+      );
+      console.log(`🎉 [RDS Auth] New user registered & saved to AWS RDS: ${newUser.name} (${newUser.email})`);
+    } catch (err: any) {
+      console.warn('[RDS Auth] Error persisting registered user into RDS:', err.message);
+    }
+  }
 
   res.json({
     success: true,

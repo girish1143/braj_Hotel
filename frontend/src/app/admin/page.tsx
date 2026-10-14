@@ -90,6 +90,7 @@ import {
   updateAdminSettings,
   ADMIN_API_BASE_URL
 } from '../../lib/api';
+import S3UploadDropzone from '../../components/S3UploadDropzone';
 
 // Supported Property & Service Types
 type PropertyType = 'Hotel' | 'Restaurant' | 'Ashram' | 'Dharamshala' | 'Transport';
@@ -2794,25 +2795,16 @@ export default function AdminDashboardPage() {
               {/* STEP 3: IMAGES & MEDIA */}
               {currentStep === 3 && (
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Main Cover Image URL *</label>
-                    <input
-                      type="url"
-                      required
-                      placeholder="https://images.unsplash.com/..."
-                      value={newProperty.mainImage}
-                      onChange={(e) => setNewProperty({ ...newProperty, mainImage: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
-                  {newProperty.mainImage && (
-                    <div className="w-full h-44 rounded-xl overflow-hidden border border-slate-800 relative">
-                      <img src={newProperty.mainImage} alt="Preview" className="w-full h-full object-cover" />
-                      <div className="absolute bottom-2 left-2 bg-slate-950/80 px-2 py-1 rounded text-[11px] text-white">
-                        Main Image Preview
-                      </div>
-                    </div>
-                  )}
+                  <S3UploadDropzone
+                    label="Main Property Image"
+                    sublabel="Upload direct to AWS S3 bucket. High quality exterior facade or reception photo."
+                    folder="hotels"
+                    currentValue={newProperty.mainImage}
+                    required
+                    sampleUrl="https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200&auto=format&fit=crop"
+                    sampleLabel="Use Sample Photo"
+                    onUploadSuccess={(url) => setNewProperty({ ...newProperty, mainImage: url })}
+                  />
                 </div>
               )}
 

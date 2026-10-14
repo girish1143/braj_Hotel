@@ -854,6 +854,95 @@ export async function fetchAdminReports(reportType?: string) {
   }
 }
 
+// ==============================================================================
+// AWS S3 Cloud Object Storage API
+// ==============================================================================
+
+export interface S3UploadResponse {
+  url: string;
+  key: string;
+  bucket: string;
+  size: number;
+  mimeType: string;
+  isS3: boolean;
+  isLocalFallback?: boolean;
+}
+
+export async function uploadFileToS3(
+  file: File,
+  folder: string = 'hotels'
+): Promise<S3UploadResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('folder', folder);
+
+  const res = await fetch(`${API_BASE_URL}/upload`, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: 'Upload failed' }));
+    throw new Error(err.message || 'Failed to upload file to S3');
+  }
+
+  const json = await res.json();
+  return json.data;
+}
+
+export async function fetchS3Status(): Promise<{
+  success: boolean;
+  info: {
+    configured: boolean;
+    storageMode: string;
+    bucket: string;
+    region: string;
+    customDomain: string | null;
+    hasCredentials: boolean;
+  };
+  connection: {
+    connected: boolean;
+    message: string;
+    bucket?: string;
+    region?: string;
+  };
+}> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/upload/status`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Status check failed');
+    return await res.json();
+  } catch {
+    return {
+      success: false,
+      info: {
+        configured: false,
+        storageMode: 'LOCAL_FALLBACK',
+        bucket: 'brijnidhi-assets',
+        region: 'ap-south-1',
+        customDomain: null,
+        hasCredentials: false
+      },
+      connection: {
+        connected: false,
+        message: 'Could not connect to S3 status API'
+      }
+    };
+  }
+}
+
+export async function deleteS3File(key: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/upload?key=${encodeURIComponent(key)}`, {
+      method: 'DELETE'
+    });
+    const json = await res.json();
+    return Boolean(json.success);
+  } catch {
+    return false;
+  }
+}
+
+
 
 
 

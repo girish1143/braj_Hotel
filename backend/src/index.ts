@@ -13,6 +13,10 @@ import authRoutes from './modules/auth/authRoutes';
 import { authenticate } from './middleware/roleGuard';
 import { initRdsDatabase, getRdsInfo, isRdsConnected } from './db/rds';
 
+import path from 'path';
+import uploadRoutes from './routes/uploadRoutes';
+import { getS3Info, testS3Connection } from './config/s3';
+
 dotenv.config();
 
 const app = express();
@@ -23,6 +27,9 @@ app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(authenticate); // Attach authenticated user / simulated role
 
+// Local static upload directory (fallback when S3 is in local mode)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Public & Customer Routes
 app.use('/api/destinations', destinationRoutes);
 app.use('/api/hotels', hotelRoutes);
@@ -31,6 +38,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/bhojan', bhojanRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/hotels/onboard', onboardRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Forward all /api/admin requests to Dockerized Rust Admin Backend (port 5001)
 app.use('/api/admin', async (req: Request, res: Response, next) => {
@@ -65,6 +73,7 @@ app.get('/api/health', (req: Request, res: Response) => {
     status: 'ok',
     platform: 'Brijnidhi — Braj Hotel & Stay Platform API',
     database: getRdsInfo(),
+    storage: getS3Info(),
     rolesSupported: ['SYSTEM_ADMIN', 'HOTEL_ADMIN', 'CUSTOMER'],
     destinations: ['Mathura', 'Vrindavan', 'Barsana', 'Govardhan'],
     timestamp: new Date().toISOString()
@@ -79,12 +88,31 @@ app.get('/api/db/status', (req: Request, res: Response) => {
   });
 });
 
+// AWS S3 Storage Status endpoint
+app.get('/api/s3/status', async (req: Request, res: Response) => {
+  const info = getS3Info();
+  const connection = await testS3Connection();
+  res.json({
+    success: true,
+    info,
+    connection
+  });
+});
+
 app.listen(PORT, async () => {
   console.log(`🌸 Brijnidhi API server running on http://localhost:${PORT}`);
   console.log(`✨ Role Architecture active: SYSTEM_ADMIN (/admin), HOTEL_ADMIN (/hotel-admin), CUSTOMER (/stays)`);
 
   // Attempt connection to AWS RDS if configured
   await initRdsDatabase();
+
+  // Test AWS S3 bucket connection
+  const s3Status = await testS3Connection();
+  if (s3Status.connected) {
+    console.log(`☁️ [AWS S3] Connected to bucket '${s3Status.bucket}' in ${s3Status.region}`);
+  } else {
+    console.log(`ℹ️ [AWS S3] Running in ${getS3Info().storageMode} mode (${s3Status.message})`);
+  }
 });
 
 export default app;

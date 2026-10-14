@@ -21,6 +21,7 @@ import {
   Check,
   Image as ImageIcon
 } from 'lucide-react';
+import S3UploadDropzone from '../../components/S3UploadDropzone';
 
 const SAMPLE_IMAGES = {
   cover: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200&auto=format&fit=crop',
@@ -70,6 +71,7 @@ export default function HotelOnboardingPage() {
     govIdType: 'Aadhaar Card',
     govIdNo: '',
     idProofAttached: false,
+    kycDocUrl: '',
 
     // Step 4: Rooms & Amenities
     roomName: '',
@@ -845,6 +847,18 @@ export default function HotelOnboardingPage() {
                     />
                     {errors.govIdNo && <p className="text-red-500 text-[11px] mt-1 font-medium">{errors.govIdNo}</p>}
                   </div>
+                <div className="pt-2 border-t border-neutral-100">
+                  <S3UploadDropzone
+                    label="Attach Business License / Satvik Food Certificate / ID Scan"
+                    sublabel="Upload PDF or scanned certificate directly to AWS S3 bucket for instant audit verification."
+                    folder="documents"
+                    acceptTypes="all"
+                    currentValue={formData.kycDocUrl}
+                    onUploadSuccess={(url) => {
+                      setFormData(prev => ({ ...prev, kycDocUrl: url, idProofAttached: true }));
+                      if (errors.idProofAttached) setErrors(prev => ({ ...prev, idProofAttached: '' }));
+                    }}
+                  />
                 </div>
 
                 <div className={`p-4 rounded-2xl border transition ${
@@ -1137,101 +1151,37 @@ export default function HotelOnboardingPage() {
                 </div>
 
                 <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="text-xs font-semibold text-neutral-700">
-                      Main Cover Photo URL (Exterior / Front Facade) <span className="text-red-500">*</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormData({ ...formData, photoUrl: SAMPLE_IMAGES.cover });
-                        if (errors.photoUrl) setErrors({ ...errors, photoUrl: '' });
-                      }}
-                      className="text-[11px] text-amber-700 font-bold hover:underline flex items-center gap-1"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      <span>Use Curated Braj Sample Photo</span>
-                    </button>
-                  </div>
-                  <input
-                    type="url"
+                  <S3UploadDropzone
+                    label="Main Cover Photo (Exterior / Front Facade)"
+                    sublabel="Upload direct to AWS S3 bucket. High quality JPG, PNG, or WEBP."
+                    folder="hotels"
+                    currentValue={formData.photoUrl}
                     required
-                    placeholder="https://images.unsplash.com/..."
-                    value={formData.photoUrl}
-                    onChange={e => {
-                      setFormData({ ...formData, photoUrl: e.target.value });
-                      if (errors.photoUrl) setErrors({ ...errors, photoUrl: '' });
+                    sampleUrl={SAMPLE_IMAGES.cover}
+                    sampleLabel="Use Curated Braj Sample Photo"
+                    onUploadSuccess={(url) => {
+                      setFormData(prev => ({ ...prev, photoUrl: url }));
+                      if (errors.photoUrl) setErrors(prev => ({ ...prev, photoUrl: '' }));
                     }}
-                    className={`w-full text-xs p-3 border rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition ${
-                      errors.photoUrl ? 'border-red-500 bg-red-50/30' : 'border-neutral-300'
-                    }`}
                   />
                   {errors.photoUrl && <p className="text-red-500 text-[11px] mt-1 font-medium">{errors.photoUrl}</p>}
-
-                  {formData.photoUrl && (
-                    <div className="relative h-44 w-full rounded-2xl overflow-hidden border border-neutral-200 mt-3 shadow-inner">
-                      <img
-                        src={formData.photoUrl}
-                        alt="Cover Preview"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as any).src = SAMPLE_IMAGES.cover;
-                        }}
-                      />
-                      <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded-md backdrop-blur-sm">
-                        Exterior Cover Preview
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="text-xs font-semibold text-neutral-700">
-                      Room Interior Photo URL <span className="text-red-500">*</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormData({ ...formData, roomPhotoUrl: SAMPLE_IMAGES.room });
-                        if (errors.roomPhotoUrl) setErrors({ ...errors, roomPhotoUrl: '' });
-                      }}
-                      className="text-[11px] text-amber-700 font-bold hover:underline flex items-center gap-1"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      <span>Use Curated Room Sample Photo</span>
-                    </button>
-                  </div>
-                  <input
-                    type="url"
+                  <S3UploadDropzone
+                    label="Room Interior Photo"
+                    sublabel="Upload direct to AWS S3 bucket. Clean room view for pilgrims."
+                    folder="rooms"
+                    currentValue={formData.roomPhotoUrl}
                     required
-                    placeholder="https://images.unsplash.com/..."
-                    value={formData.roomPhotoUrl}
-                    onChange={e => {
-                      setFormData({ ...formData, roomPhotoUrl: e.target.value });
-                      if (errors.roomPhotoUrl) setErrors({ ...errors, roomPhotoUrl: '' });
+                    sampleUrl={SAMPLE_IMAGES.room}
+                    sampleLabel="Use Curated Room Sample Photo"
+                    onUploadSuccess={(url) => {
+                      setFormData(prev => ({ ...prev, roomPhotoUrl: url }));
+                      if (errors.roomPhotoUrl) setErrors(prev => ({ ...prev, roomPhotoUrl: '' }));
                     }}
-                    className={`w-full text-xs p-3 border rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition ${
-                      errors.roomPhotoUrl ? 'border-red-500 bg-red-50/30' : 'border-neutral-300'
-                    }`}
                   />
                   {errors.roomPhotoUrl && <p className="text-red-500 text-[11px] mt-1 font-medium">{errors.roomPhotoUrl}</p>}
-
-                  {formData.roomPhotoUrl && (
-                    <div className="relative h-44 w-full rounded-2xl overflow-hidden border border-neutral-200 mt-3 shadow-inner">
-                      <img
-                        src={formData.roomPhotoUrl}
-                        alt="Room Interior Preview"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as any).src = SAMPLE_IMAGES.room;
-                        }}
-                      />
-                      <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded-md backdrop-blur-sm">
-                        Room Interior Preview
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 <div className={`p-4 rounded-2xl border transition ${
