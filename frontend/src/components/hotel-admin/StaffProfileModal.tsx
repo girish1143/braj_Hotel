@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { User, Mail, Phone, Briefcase, Building2, Calendar, Shield, X, Check, RefreshCw, AlertCircle, Save } from 'lucide-react';
 import { StaffAccount } from './types';
+import { API_BASE_URL } from '../../lib/api';
 
 interface StaffProfileModalProps {
   isOpen: boolean;
@@ -38,7 +39,7 @@ export default function StaffProfileModal({
 
     setIsSaving(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/hotel-admin/staff/${staff.id}/profile`, {
+      const res = await fetch(`${API_BASE_URL}/hotel-admin/staff/${staff.id}/profile`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fullName, email, phone })

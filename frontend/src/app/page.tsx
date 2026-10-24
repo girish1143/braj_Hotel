@@ -12,6 +12,7 @@ import DarshanScheduleModal from '../components/DarshanScheduleModal';
 import Braj3DBackground from '../components/Braj3DBackground';
 import LoginModal from '../components/LoginModal';
 import { brajDestinations, brajHotels, brajExperiences } from '../lib/data';
+import { API_BASE_URL } from '../lib/api';
 import { Hotel } from '../types';
 import {
   Sparkles,
@@ -55,7 +56,7 @@ export default function HomePage() {
 
   React.useEffect(() => {
     const fetchHotels = () => {
-      fetch('http://localhost:5000/api/hotels')
+      fetch(`${API_BASE_URL}/hotels`)
         .then((res) => res.json())
         .then((json) => {
           if (json.success && Array.isArray(json.data) && json.data.length > 0) {

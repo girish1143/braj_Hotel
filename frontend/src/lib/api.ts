@@ -1,8 +1,8 @@
 import { Destination, Hotel, Experience, BookingRequest, BookingResponse, Bhojanalaya } from '../types';
 import { brajDestinations, brajHotels, brajExperiences, brajBhojanalayas } from './data';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-export const ADMIN_API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || 'http://localhost:5001/api/admin';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? '/api' : 'http://localhost:5000/api');
+export const ADMIN_API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL || (typeof window !== 'undefined' ? '/api/admin' : 'http://localhost:5001/api/admin');
 
 export async function fetchDestinations(): Promise<Destination[]> {
   try {

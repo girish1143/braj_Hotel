@@ -15,6 +15,7 @@ import {
   KeyRound,
   ShieldAlert
 } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function HotelSignInPage() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function HotelSignInPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/hotel-admin/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/hotel-admin/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

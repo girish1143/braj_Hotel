@@ -5,6 +5,7 @@ import { useParams, notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { brajHotels } from '../../../lib/data';
+import { API_BASE_URL } from '../../../lib/api';
 import { Hotel } from '../../../types';
 import BookingModal from '../../../components/BookingModal';
 import {
@@ -36,7 +37,7 @@ export default function HotelDetailPage() {
 
   React.useEffect(() => {
     if (!hotel && idOrSlug) {
-      fetch(`http://localhost:5000/api/hotels/${idOrSlug}`)
+      fetch(`${API_BASE_URL}/hotels/${idOrSlug}`)
         .then((res) => res.json())
         .then((json) => {
           if (json.success && json.data) {

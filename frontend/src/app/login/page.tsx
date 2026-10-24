@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { API_BASE_URL } from '@/lib/api';
 
 function LoginContent() {
   const router = useRouter();
@@ -100,7 +101,7 @@ function LoginContent() {
 
     setSendingOtp(true);
     try {
-      const res = await fetch('http://localhost:5000/api/auth/send-otp', {
+      const res = await fetch(`${API_BASE_URL}/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: currentIdentifier, phone, email })
@@ -133,7 +134,7 @@ function LoginContent() {
 
     setVerifyingOtp(true);
     try {
-      const res = await fetch('http://localhost:5000/api/auth/verify-otp', {
+      const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: currentIdentifier, otp: otpInput.trim() })
@@ -175,7 +176,7 @@ function LoginContent() {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -238,7 +239,7 @@ function LoginContent() {
 
     setRegSendingOtp(true);
     try {
-      const res = await fetch('http://localhost:5000/api/auth/send-otp', {
+      const res = await fetch(`${API_BASE_URL}/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: regPhone.trim(), phone: regPhone.trim() })
@@ -270,7 +271,7 @@ function LoginContent() {
 
     setRegVerifyingOtp(true);
     try {
-      const res = await fetch('http://localhost:5000/api/auth/verify-otp', {
+      const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: regPhone.trim(), otp: regOtpInput.trim() })
@@ -314,7 +315,7 @@ function LoginContent() {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/auth/register', {
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -376,7 +377,7 @@ function LoginContent() {
       const rawName = cleanEmail.split('@')[0].replace(/[._]/g, ' ');
       const cleanName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
 
-      const res = await fetch('http://localhost:5000/api/auth/google', {
+      const res = await fetch(`${API_BASE_URL}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -22,6 +22,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { StaffAccount, StaffRole } from './types';
+import { API_BASE_URL } from '../../lib/api';
 
 interface HotelAdminLoginProps {
   hotelName: string;
@@ -90,7 +91,7 @@ export default function HotelAdminLogin({
 
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/hotel-admin/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/hotel-admin/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: identifier.trim(), password })
@@ -139,7 +140,7 @@ export default function HotelAdminLogin({
 
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/hotel-admin/auth/change-password', {
+      const res = await fetch(`${API_BASE_URL}/hotel-admin/auth/change-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -177,7 +178,7 @@ export default function HotelAdminLogin({
 
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/hotel-admin/auth/forgot-password', {
+      const res = await fetch(`${API_BASE_URL}/hotel-admin/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: recoveryIdentifier.trim() })
@@ -203,7 +204,7 @@ export default function HotelAdminLogin({
 
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/hotel-admin/auth/reset-password', {
+      const res = await fetch(`${API_BASE_URL}/hotel-admin/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

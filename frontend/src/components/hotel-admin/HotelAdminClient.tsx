@@ -59,8 +59,9 @@ import StaffProfileModal from './StaffProfileModal';
 import PropertySwitcherModal from './PropertySwitcherModal';
 import { BRAJ_HOTEL_PROPERTIES } from './hotelData';
 import RoomInventoryTable, { RoomItem } from './RoomInventoryTable';
+import { API_BASE_URL } from '../../lib/api';
 
-const API_BASE = 'http://localhost:5000/api/hotel-admin';
+const API_BASE = `${API_BASE_URL}/hotel-admin`;
 
 // Types for Hotel Admin Modules
 

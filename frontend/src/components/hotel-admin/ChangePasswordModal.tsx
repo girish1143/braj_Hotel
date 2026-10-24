@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Lock, X, Check, AlertCircle, RefreshCw } from 'lucide-react';
+import { API_BASE_URL } from '../../lib/api';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -45,7 +46,7 @@ export default function ChangePasswordModal({
 
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/hotel-admin/auth/change-password', {
+      const res = await fetch(`${API_BASE_URL}/hotel-admin/auth/change-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

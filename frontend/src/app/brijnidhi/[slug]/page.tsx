@@ -9,6 +9,7 @@ import FilterSidebar from '../../../components/FilterSidebar';
 import BookingModal from '../../../components/BookingModal';
 import DestinationVideoHero from '../../../components/DestinationVideoHero';
 import { brajDestinations, brajHotels } from '../../../lib/data';
+import { API_BASE_URL } from '../../../lib/api';
 import { Hotel } from '../../../types';
 import { MapPin, Sparkles, Filter, ChevronRight, Check, ArrowLeft, RotateCcw } from 'lucide-react';
 
@@ -55,7 +56,7 @@ export default function DestinationLandingPage() {
   const [allHotels, setAllHotels] = useState<Hotel[]>(brajHotels);
 
   React.useEffect(() => {
-    fetch('http://localhost:5000/api/hotels')
+    fetch(`${API_BASE_URL}/hotels`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success && Array.isArray(json.data)) {

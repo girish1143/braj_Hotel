@@ -6,6 +6,7 @@ import HotelCard from '../../components/HotelCard';
 import FilterSidebar from '../../components/FilterSidebar';
 import BookingModal from '../../components/BookingModal';
 import { brajHotels } from '../../lib/data';
+import { API_BASE_URL } from '../../lib/api';
 import { Hotel } from '../../types';
 import { Search, MapPin, Sparkles, Filter, X } from 'lucide-react';
 
@@ -25,7 +26,7 @@ function StaysContent() {
 
   // Fetch hotels from backend on mount
   useEffect(() => {
-    fetch('http://localhost:5000/api/hotels')
+    fetch(`${API_BASE_URL}/hotels`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success && Array.isArray(json.data)) {

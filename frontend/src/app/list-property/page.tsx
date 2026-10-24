@@ -22,6 +22,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import S3UploadDropzone from '../../components/S3UploadDropzone';
+import { API_BASE_URL } from '../../lib/api';
 
 const SAMPLE_IMAGES = {
   cover: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200&auto=format&fit=crop',
@@ -282,7 +283,7 @@ export default function HotelOnboardingPage() {
     setStepError(null);
 
     try {
-      const res = await fetch('http://localhost:5000/api/hotels/submit', {
+      const res = await fetch(`${API_BASE_URL}/hotels/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

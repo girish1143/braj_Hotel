@@ -32,6 +32,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { StaffAccount, StaffRole, StaffDepartment, StaffStatus, StaffActivityLog } from './types';
+import { API_BASE_URL } from '../../lib/api';
 
 interface StaffManagementModuleProps {
   currentStaffRole: StaffRole;
@@ -99,21 +100,21 @@ export default function StaffManagementModule({
     setIsLoading(true);
     try {
       // 1. Fetch Directory
-      const res = await fetch('http://localhost:5000/api/hotel-admin/staff');
+      const res = await fetch(`${API_BASE_URL}/hotel-admin/staff`);
       const data = await res.json();
       if (data.success && data.data) {
         setStaffList(data.data.staff || []);
       }
 
       // 2. Fetch Metrics
-      const mRes = await fetch('http://localhost:5000/api/hotel-admin/staff/metrics');
+      const mRes = await fetch(`${API_BASE_URL}/hotel-admin/staff/metrics`);
       const mData = await mRes.json();
       if (mData.success && mData.data) {
         setMetrics(mData.data);
       }
 
       // 3. Fetch Activity Logs
-      const aRes = await fetch('http://localhost:5000/api/hotel-admin/staff/activity');
+      const aRes = await fetch(`${API_BASE_URL}/hotel-admin/staff/activity`);
       const aData = await aRes.json();
       if (aData.success && aData.data) {
         setActivityLogs(aData.data);
@@ -158,7 +159,7 @@ export default function StaffManagementModule({
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('http://localhost:5000/api/hotel-admin/staff', {
+      const res = await fetch(`${API_BASE_URL}/hotel-admin/staff`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -211,7 +212,7 @@ export default function StaffManagementModule({
   // Handle Status Toggle (Activate, Inactivate, Suspend)
   const handleUpdateStatus = async (staffId: string, newStatus: StaffStatus) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/hotel-admin/staff/${staffId}`, {
+      const res = await fetch(`${API_BASE_URL}/hotel-admin/staff/${staffId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -231,7 +232,7 @@ export default function StaffManagementModule({
     if (!confirm) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/hotel-admin/staff/${staff.id}/reset-password`, {
+      const res = await fetch(`${API_BASE_URL}/hotel-admin/staff/${staff.id}/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
