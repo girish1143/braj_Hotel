@@ -23,41 +23,20 @@ git pull origin main
 # 2. Build Node.js Backend (Port 5000)
 echo "📦 2. Building Node.js Backend..."
 cd "$PROJECT_ROOT/backend"
-npm ci --prefer-offline --no-audit
+npm install --no-audit
 npm run build
 
 # 3. Build Next.js Frontend (Port 3000)
 echo "📦 3. Building Next.js Frontend..."
 cd "$PROJECT_ROOT/frontend"
-npm ci --prefer-offline --no-audit
+npm install --no-audit
 npm run build
 
-# 4. Handle Rust Admin Backend (Port 5001)
-if [ "$MODE" = "native" ]; then
-  echo "🦀 4. Building Rust Backend NATIVELY (Option 2)..."
-  source "$HOME/.cargo/env" || true
-  cd "$PROJECT_ROOT/backend-rust"
-  cargo build --release
-
-  # Stop any existing Docker container on port 5001 if running
-  docker stop brijnidhi-admin-rust-container 2>/dev/null || true
-
-  # Restart PM2 with native rust configuration
-  cd "$PROJECT_ROOT"
-  pm2 startOrReload ecosystem.config.js --env production --only brijnidhi-rust-admin,brijnidhi-backend,brijnidhi-frontend
-else
-  echo "🐳 4. Building & Running Rust Backend via DOCKER (Option 1)..."
-  cd "$PROJECT_ROOT/backend-rust"
-  docker build -t brijnidhi-admin-rust .
-  docker stop brijnidhi-admin-rust-container 2>/dev/null || true
-  docker rm brijnidhi-admin-rust-container 2>/dev/null || true
-  docker run -d --name brijnidhi-admin-rust-container -p 5001:5001 --restart always brijnidhi-admin-rust:latest
-
-  # Restart PM2 for Node & Next.js only
-  cd "$PROJECT_ROOT"
-  pm2 startOrReload ecosystem.config.js --env production --only brijnidhi-backend,brijnidhi-frontend
-fi
-
+# 4. Restart Services with PM2
+echo "⚡ 4. Starting/Reloading Services with PM2..."
+cd "$PROJECT_ROOT"
+pm2 delete all 2>/dev/null || true
+pm2 start ecosystem.config.js
 pm2 save
 
 # 5. Verify Health Checks

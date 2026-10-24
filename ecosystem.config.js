@@ -8,6 +8,10 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 5000
+      },
       env_production: {
         NODE_ENV: 'production',
         PORT: 5000
@@ -22,21 +26,13 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '1G',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000
+      },
       env_production: {
         NODE_ENV: 'production',
         PORT: 3000
-      }
-    },
-    {
-      name: 'brijnidhi-rust-admin',
-      cwd: './backend-rust',
-      script: './target/release/brijnidhi-admin-backend',
-      instances: 1,
-      autorestart: true,
-      watch: false,
-      max_memory_restart: '400M',
-      env_production: {
-        PORT: 5001
       }
     }
   ]
