@@ -1,9 +1,11 @@
 import fs from 'fs';
 import path from 'path';
-import { query, isRdsConnected } from './rds';
+import { query, isDbConnected } from '../db/mysql';
 import { Bhojanalaya, BhojanMenuItem, BhojanReservation, BhojanReview } from '../types';
 
-const STORE_PATH = path.resolve(process.cwd(), 'src', 'data', 'bhojanStore.json');
+const STORE_PATH = fs.existsSync(path.join(__dirname, 'bhojanStore.json'))
+  ? path.join(__dirname, 'bhojanStore.json')
+  : path.resolve(process.cwd(), 'src', 'data', 'bhojanStore.json');
 
 interface BhojanStoreSchema {
   bhojanalayas: Bhojanalaya[];
@@ -70,7 +72,7 @@ export async function getBhojanalayas(filters?: {
 }): Promise<Bhojanalaya[]> {
   const reqStatus = filters?.status || 'APPROVED';
 
-  if (isRdsConnected()) {
+  if (isDbConnected()) {
     try {
       let sql = `SELECT * FROM bhojanalayas WHERE 1=1`;
       const params: any[] = [];
@@ -143,7 +145,7 @@ export async function getBhojanalayas(filters?: {
       }
       return results;
     } catch (err: any) {
-      console.warn('[AWS RDS] Failed to fetch bhojanalayas from RDS, falling back to local store:', err.message);
+      console.warn('[MySQL] Failed to fetch bhojanalayas from MySQL, using local store:', err.message);
     }
   }
 
@@ -182,7 +184,7 @@ export async function getBhojanalayas(filters?: {
 export async function getBhojanalayaByIdOrSlug(idOrSlug: string): Promise<Bhojanalaya | null> {
   const norm = idOrSlug.toLowerCase();
 
-  if (isRdsConnected()) {
+  if (isDbConnected()) {
     try {
       const rows = await query<any[]>(
         `SELECT * FROM bhojanalayas WHERE LOWER(id) = ? OR LOWER(slug) = ? LIMIT 1`,
@@ -225,7 +227,7 @@ export async function getBhojanalayaByIdOrSlug(idOrSlug: string): Promise<Bhojan
         };
       }
     } catch (err: any) {
-      console.warn('[AWS RDS] Failed to get bhojanalaya by slug:', err.message);
+      console.warn('[MySQL] Failed to fetch bhojanalaya by slug from MySQL:', err.message);
     }
   }
 
@@ -237,7 +239,7 @@ export async function getBhojanalayaByIdOrSlug(idOrSlug: string): Promise<Bhojan
 }
 
 export async function saveBhojanalaya(bhojanalaya: Bhojanalaya): Promise<Bhojanalaya> {
-  if (isRdsConnected()) {
+  if (isDbConnected()) {
     try {
       await query(
         `INSERT INTO bhojanalayas (
@@ -290,18 +292,17 @@ export async function saveBhojanalaya(bhojanalaya: Bhojanalaya): Promise<Bhojana
         ]
       );
     } catch (err: any) {
-      console.warn('[AWS RDS] Failed to save bhojanalaya to RDS:', err.message);
+      console.warn('[MySQL] Failed to save bhojanalaya to MySQL:', err.message);
     }
   }
 
-  // Always update local store
   const idx = localStore.bhojanalayas.findIndex((b) => b.id === bhojanalaya.id);
   if (idx >= 0) {
     localStore.bhojanalayas[idx] = { ...bhojanalaya, updatedAt: new Date().toISOString() };
   } else {
     localStore.bhojanalayas.push({
       ...bhojanalaya,
-      createdAt: new Date().toISOString(),
+      createdAt: bhojanalaya.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
   }
@@ -310,11 +311,11 @@ export async function saveBhojanalaya(bhojanalaya: Bhojanalaya): Promise<Bhojana
 }
 
 export async function deleteBhojanalaya(id: string): Promise<boolean> {
-  if (isRdsConnected()) {
+  if (isDbConnected()) {
     try {
       await query(`DELETE FROM bhojanalayas WHERE id = ?`, [id]);
     } catch (err: any) {
-      console.warn('[AWS RDS] Error deleting bhojanalaya:', err.message);
+      console.warn('[MySQL] Error deleting bhojanalaya from MySQL:', err.message);
     }
   }
 
@@ -329,7 +330,7 @@ export async function deleteBhojanalaya(id: string): Promise<boolean> {
 // ==========================================
 
 export async function saveReservation(reservation: BhojanReservation): Promise<BhojanReservation> {
-  if (isRdsConnected()) {
+  if (isDbConnected()) {
     try {
       await query(
         `INSERT INTO bhojan_reservations (
@@ -354,7 +355,7 @@ export async function saveReservation(reservation: BhojanReservation): Promise<B
         ]
       );
     } catch (err: any) {
-      console.warn('[AWS RDS] Failed to save reservation to RDS:', err.message);
+      console.warn('[MySQL] Failed to save reservation to MySQL:', err.message);
     }
   }
 
@@ -364,7 +365,7 @@ export async function saveReservation(reservation: BhojanReservation): Promise<B
 }
 
 export async function getReservationByRef(ref: string): Promise<BhojanReservation | null> {
-  if (isRdsConnected()) {
+  if (isDbConnected()) {
     try {
       const rows = await query<any[]>(
         `SELECT * FROM bhojan_reservations WHERE reservation_reference = ? OR id = ? LIMIT 1`,
@@ -380,7 +381,7 @@ export async function getReservationByRef(ref: string): Promise<BhojanReservatio
           guestName: r.guest_name,
           guestPhone: r.guest_phone,
           guestEmail: r.guest_email,
-          date: r.reservation_date ? r.reservation_date.toISOString().split('T')[0] : '',
+          date: r.reservation_date ? String(r.reservation_date).split('T')[0] : '',
           mealTime: r.meal_time,
           thaliCount: r.thali_count,
           specialRequests: r.special_requests,
@@ -390,7 +391,7 @@ export async function getReservationByRef(ref: string): Promise<BhojanReservatio
         };
       }
     } catch (err: any) {
-      console.warn('[AWS RDS] Error querying reservation by ref:', err.message);
+      console.warn('[MySQL] Error querying reservation by ref:', err.message);
     }
   }
 
@@ -404,7 +405,7 @@ export async function getReservationByRef(ref: string): Promise<BhojanReservatio
 }
 
 export async function getAllReservations(bhojanalayaId?: string): Promise<BhojanReservation[]> {
-  if (isRdsConnected()) {
+  if (isDbConnected()) {
     try {
       let sql = `SELECT * FROM bhojan_reservations`;
       const params: any[] = [];
@@ -422,7 +423,7 @@ export async function getAllReservations(bhojanalayaId?: string): Promise<Bhojan
         guestName: r.guest_name,
         guestPhone: r.guest_phone,
         guestEmail: r.guest_email,
-        date: r.reservation_date ? r.reservation_date.toISOString().split('T')[0] : '',
+        date: r.reservation_date ? String(r.reservation_date).split('T')[0] : '',
         mealTime: r.meal_time,
         thaliCount: r.thali_count,
         specialRequests: r.special_requests,
@@ -431,7 +432,7 @@ export async function getAllReservations(bhojanalayaId?: string): Promise<Bhojan
         createdAt: r.created_at
       }));
     } catch (err: any) {
-      console.warn('[AWS RDS] Error querying all reservations:', err.message);
+      console.warn('[MySQL] Error querying all reservations:', err.message);
     }
   }
 
@@ -442,14 +443,14 @@ export async function getAllReservations(bhojanalayaId?: string): Promise<Bhojan
 }
 
 export async function cancelReservation(refOrId: string): Promise<boolean> {
-  if (isRdsConnected()) {
+  if (isDbConnected()) {
     try {
       await query(
         `UPDATE bhojan_reservations SET status = 'CANCELLED' WHERE reservation_reference = ? OR id = ?`,
         [refOrId, refOrId]
       );
     } catch (err: any) {
-      console.warn('[AWS RDS] Error cancelling reservation:', err.message);
+      console.warn('[MySQL] Error cancelling reservation:', err.message);
     }
   }
 
@@ -469,7 +470,7 @@ export async function cancelReservation(refOrId: string): Promise<boolean> {
 // ==========================================
 
 export async function getMenuItems(bhojanalayaId: string): Promise<BhojanMenuItem[]> {
-  if (isRdsConnected()) {
+  if (isDbConnected()) {
     try {
       const rows = await query<any[]>(
         `SELECT * FROM bhojan_menu_items WHERE bhojanalaya_id = ? AND is_available = 1 ORDER BY category, price ASC`,
@@ -489,7 +490,7 @@ export async function getMenuItems(bhojanalayaId: string): Promise<BhojanMenuIte
         imageUrl: r.image_url
       }));
     } catch (err: any) {
-      console.warn('[AWS RDS] Error fetching menu items:', err.message);
+      console.warn('[MySQL] Error fetching menu items:', err.message);
     }
   }
 
@@ -497,7 +498,7 @@ export async function getMenuItems(bhojanalayaId: string): Promise<BhojanMenuIte
 }
 
 export async function saveMenuItem(item: BhojanMenuItem): Promise<BhojanMenuItem> {
-  if (isRdsConnected()) {
+  if (isDbConnected()) {
     try {
       await query(
         `INSERT INTO bhojan_menu_items (
@@ -523,7 +524,7 @@ export async function saveMenuItem(item: BhojanMenuItem): Promise<BhojanMenuItem
         ]
       );
     } catch (err: any) {
-      console.warn('[AWS RDS] Error saving menu item:', err.message);
+      console.warn('[MySQL] Error saving menu item:', err.message);
     }
   }
 
@@ -542,7 +543,7 @@ export async function saveMenuItem(item: BhojanMenuItem): Promise<BhojanMenuItem
 // ==========================================
 
 export async function getReviews(bhojanalayaId: string): Promise<BhojanReview[]> {
-  if (isRdsConnected()) {
+  if (isDbConnected()) {
     try {
       const rows = await query<any[]>(
         `SELECT * FROM bhojan_reviews WHERE bhojanalaya_id = ? ORDER BY created_at DESC`,
@@ -560,7 +561,7 @@ export async function getReviews(bhojanalayaId: string): Promise<BhojanReview[]>
         createdAt: r.created_at
       }));
     } catch (err: any) {
-      console.warn('[AWS RDS] Error fetching reviews:', err.message);
+      console.warn('[MySQL] Error fetching reviews:', err.message);
     }
   }
 
@@ -568,7 +569,7 @@ export async function getReviews(bhojanalayaId: string): Promise<BhojanReview[]>
 }
 
 export async function saveReview(review: BhojanReview): Promise<BhojanReview> {
-  if (isRdsConnected()) {
+  if (isDbConnected()) {
     try {
       await query(
         `INSERT INTO bhojan_reviews (
@@ -585,7 +586,7 @@ export async function saveReview(review: BhojanReview): Promise<BhojanReview> {
           review.darshanExperience || null
         ]
       );
-      // Recalculate average rating on RDS
+      // Recalculate average rating on MySQL
       await query(
         `UPDATE bhojanalayas SET
           rating_score = (SELECT ROUND(AVG(rating), 1) FROM bhojan_reviews WHERE bhojanalaya_id = ?),
@@ -594,7 +595,7 @@ export async function saveReview(review: BhojanReview): Promise<BhojanReview> {
         [review.bhojanalayaId, review.bhojanalayaId, review.bhojanalayaId]
       );
     } catch (err: any) {
-      console.warn('[AWS RDS] Error saving review:', err.message);
+      console.warn('[MySQL] Error saving review:', err.message);
     }
   }
 

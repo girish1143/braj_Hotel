@@ -9,10 +9,10 @@ import {
   deleteBhojanalaya,
   getAllReservations,
   getBhojanStats
-} from '../../db/bhojanRepository';
+} from '../../data/bhojanRepository';
 import { getAllBookings, updateBookingStatus, deleteBooking } from '../../routes/bookingRoutes';
 import { Bhojanalaya, BhojanReservation, BookingResponse } from '../../types';
-import { query, isRdsConnected } from '../../db/rds';
+import { query, isDbConnected } from '../../db/mysql';
 
 // In-memory state for admin actions
 export interface AdminHotelItem {
@@ -871,7 +871,7 @@ router.delete('/bookings/:id', (req: Request, res: Response) => {
 // ==========================================
 
 router.get('/users', async (req: Request, res: Response) => {
-  if (isRdsConnected()) {
+  if (isDbConnected()) {
     try {
       const dbUsers = await query<any[]>(
         'SELECT id, name, email, phone, role, status, DATE_FORMAT(created_at, "%d %b %Y") as joined FROM users ORDER BY created_at DESC'
@@ -884,7 +884,7 @@ router.get('/users', async (req: Request, res: Response) => {
         });
       }
     } catch (err: any) {
-      console.warn('[RDS Admin] Error fetching users from RDS:', err.message);
+      console.warn('[MySQL Admin] Error fetching users from MySQL:', err.message);
     }
   }
 
@@ -913,14 +913,14 @@ router.post('/users', async (req: Request, res: Response) => {
 
   adminUsers.unshift(newUser);
 
-  if (isRdsConnected()) {
+  if (isDbConnected()) {
     try {
       await query(
         'INSERT INTO users (id, name, email, phone, role, status) VALUES (?, ?, ?, ?, ?, ?)',
         [newUser.id, newUser.name, newUser.email, newUser.phone, newUser.role, newUser.status]
       );
     } catch (err: any) {
-      console.warn('[RDS Admin] Error inserting user into RDS:', err.message);
+      console.warn('[MySQL Admin] Error inserting user into MySQL:', err.message);
     }
   }
 

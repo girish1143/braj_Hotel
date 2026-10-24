@@ -9,7 +9,10 @@ export default function Footer() {
   const pathname = usePathname();
 
   // Hide consumer footer on admin portals
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/hotel-admin')) {
+  if (
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/hotel')
+  ) {
     return null;
   }
 

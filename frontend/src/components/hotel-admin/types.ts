@@ -97,8 +97,10 @@ export interface OperatorSession {
   id: string;
   pin: string;
   name: string;
-  role: 'Desk Lead' | 'Front Desk Agent' | 'Night Auditor' | 'Duty Manager';
+  role: string;
   shift: string;
+  hotelId?: string;
+  hotelName?: string;
 }
 
 export interface AuditActionLog {
@@ -106,6 +108,86 @@ export interface AuditActionLog {
   timestamp: string;
   operatorName: string;
   action: string;
-  module: 'Front Desk' | 'Tape Chart' | 'Housekeeping' | 'POS & Billing' | 'Shift Balance';
+  module: 'Front Desk' | 'Tape Chart' | 'Housekeeping' | 'POS & Billing' | 'Shift Balance' | 'Security & Auth';
   details: string;
 }
+
+export interface HotelPMSProperty {
+  id: string;
+  propertyCode: string;
+  name: string;
+  destination: 'Vrindavan' | 'Mathura' | 'Barsana' | 'Govardhan';
+  destinationHindi: string;
+  description?: string;
+  address: string;
+  nearestLandmark: string;
+  contactPhone: string;
+  contactEmail: string;
+  checkInTime: string;
+  checkOutTime: string;
+  satvikCertified: boolean;
+  amenities: string[];
+  policies: string;
+  staff: OperatorSession[];
+  rooms?: PMSRoom[];
+  bookings?: PMSBooking[];
+  housekeepingTasks?: HousekeepingTask[];
+  maintenanceTickets?: MaintenanceTicket[];
+  shiftRecord?: ShiftCashRecord;
+  initialRooms: PMSRoom[];
+  initialBookings?: PMSBooking[];
+  initialTasks?: HousekeepingTask[];
+  initialTickets?: MaintenanceTicket[];
+  initialShift?: ShiftCashRecord;
+}
+
+export type StaffRole =
+  | 'Admin'
+  | 'Manager'
+  | 'Receptionist'
+  | 'Housekeeping'
+  | 'Accountant'
+  | 'Restaurant Staff';
+
+export type StaffDepartment =
+  | 'Administration'
+  | 'Front Office'
+  | 'Housekeeping'
+  | 'Accounts & Finance'
+  | 'Food & Beverage'
+  | 'Operations & Management';
+
+export type StaffStatus = 'Active' | 'Inactive' | 'Suspended';
+
+export interface StaffAccount {
+  id: string;
+  fullName: string;
+  employeeId: string;
+  email: string;
+  phone: string;
+  department: StaffDepartment;
+  position: string;
+  username: string;
+  role: StaffRole;
+  permissions: string[];
+  status: StaffStatus;
+  joiningDate: string;
+  hotelId: string;
+  hotelName: string;
+  mustChangePassword?: boolean;
+  lastLoginAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface StaffActivityLog {
+  id: string;
+  timestamp: string;
+  staffId: string;
+  staffName: string;
+  action: string;
+  details: string;
+  ip: string;
+  status: 'SUCCESS' | 'FAILED' | 'WARNING';
+}
+

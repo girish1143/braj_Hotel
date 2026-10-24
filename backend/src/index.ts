@@ -1,6 +1,8 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import destinationRoutes from './routes/destinationRoutes';
 import hotelRoutes from './routes/hotelRoutes';
 import experienceRoutes from './routes/experienceRoutes';
@@ -8,10 +10,11 @@ import bookingRoutes from './routes/bookingRoutes';
 import bhojanRoutes from './routes/bhojanRoutes';
 import systemAdminRoutes from './modules/system-admin/systemAdminRoutes';
 import hotelAdminRoutes from './modules/hotel-admin/hotelAdminRoutes';
+import hotelStaffRoutes from './modules/hotel-staff/hotelStaffRoutes';
 import onboardRoutes from './modules/hotels/onboardRoutes';
 import authRoutes from './modules/auth/authRoutes';
 import { authenticate } from './middleware/roleGuard';
-import { initRdsDatabase, getRdsInfo, isRdsConnected } from './db/rds';
+import { initDatabase, getDbInfo, isDbConnected } from './db/mysql';
 
 import path from 'path';
 import uploadRoutes from './routes/uploadRoutes';
@@ -65,6 +68,8 @@ app.use('/api/admin', async (req: Request, res: Response, next) => {
   }
 });
 app.use('/api/admin', systemAdminRoutes);           // Fallback only
+app.use('/api/hotel', hotelStaffRoutes);             // Hotel Partner Public Auth & Operations
+app.use('/api/hotel-admin', hotelStaffRoutes);       // Hotel Staff Auth & Management
 app.use('/api/hotel-admin', hotelAdminRoutes);      // HOTEL_ADMIN only
 
 // Health check endpoint
@@ -72,7 +77,7 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.json({
     status: 'ok',
     platform: 'Brijnidhi — Braj Hotel & Stay Platform API',
-    database: getRdsInfo(),
+    database: getDbInfo(),
     storage: getS3Info(),
     rolesSupported: ['SYSTEM_ADMIN', 'HOTEL_ADMIN', 'CUSTOMER'],
     destinations: ['Mathura', 'Vrindavan', 'Barsana', 'Govardhan'],
@@ -80,11 +85,11 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
-// AWS RDS Database Status endpoint
+// MySQL Database Status endpoint
 app.get('/api/db/status', (req: Request, res: Response) => {
   res.json({
     success: true,
-    awsRds: getRdsInfo()
+    mysql: getDbInfo()
   });
 });
 
@@ -103,8 +108,8 @@ app.listen(PORT, async () => {
   console.log(`🌸 Brijnidhi API server running on http://localhost:${PORT}`);
   console.log(`✨ Role Architecture active: SYSTEM_ADMIN (/admin), HOTEL_ADMIN (/hotel-admin), CUSTOMER (/stays)`);
 
-  // Attempt connection to AWS RDS if configured
-  await initRdsDatabase();
+  // Initialize MySQL database connection
+  await initDatabase();
 
   // Test AWS S3 bucket connection
   const s3Status = await testS3Connection();

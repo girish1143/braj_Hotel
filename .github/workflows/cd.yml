@@ -94,7 +94,7 @@ jobs:
             # Check production .env file safety
             if [ ! -f "backend/.env" ]; then
               echo "⚠️ Warning: backend/.env was not found in $TARGET_DIR/backend/.env."
-              echo "Please ensure production DB and secret variables are placed there."
+              echo "Please ensure production secret variables are placed there."
             else
               echo "🔒 Verified: backend/.env exists and is preserved."
             fi

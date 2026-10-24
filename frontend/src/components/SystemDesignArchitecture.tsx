@@ -171,10 +171,10 @@ export default function SystemDesignArchitecture() {
                 </div>
 
                 <Link
-                  href="/hotel-admin"
+                  href="/hotel/dashboard"
                   className="w-full btn-secondary text-xs py-2 flex items-center justify-center text-amber-950 border-amber-300 hover:bg-amber-50"
                 >
-                  <span>Open Hotel Admin</span>
+                  <span>Open Hotel Dashboard</span>
                   <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                 </Link>
               </div>
@@ -324,13 +324,13 @@ export default function SystemDesignArchitecture() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-amber-50/70 p-5 rounded-2xl border border-amber-200">
             <div>
               <span className="text-xs uppercase font-black text-amber-800 tracking-wider">Role 2 Details</span>
-              <h3 className="text-xl font-bold font-serif text-neutral-900">Hotel Admin Portal (`/hotel-admin`)</h3>
+              <h3 className="text-xl font-bold font-serif text-neutral-900">Hotel Partner Portal (`/hotel/dashboard`)</h3>
               <p className="text-xs text-neutral-600 mt-1">
                 Property management dashboard isolated strictly to the owner&apos;s property with real-time room availability matrix.
               </p>
             </div>
-            <Link href="/hotel-admin" className="btn-primary text-xs py-2.5 px-4 whitespace-nowrap">
-              Launch Hotel Admin (`/hotel-admin`)
+            <Link href="/hotel/dashboard" className="btn-primary text-xs py-2.5 px-4 whitespace-nowrap">
+              Launch Hotel Dashboard (`/hotel/dashboard`)
             </Link>
           </div>
 

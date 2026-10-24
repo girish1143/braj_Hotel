@@ -52,12 +52,20 @@ export default function AuditLogsViewer({ logs }: AuditLogsViewerProps) {
                     {log.operatorName}
                   </td>
                   <td className="py-3 px-3">
-                    <span className="text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2 py-0.5 rounded">
+                    <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                      log.module === 'Security & Auth'
+                        ? 'bg-purple-100 text-purple-900 border border-purple-200'
+                        : log.module === 'Shift Balance'
+                        ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
+                        : 'bg-amber-100 text-amber-900 border border-amber-200'
+                    }`}>
                       {log.module}
                     </span>
                   </td>
                   <td className="py-3 px-3 font-mono font-bold text-neutral-800">
-                    {log.action}
+                    <span className={log.action.includes('LOCK') || log.action.includes('LOGOUT') ? 'text-amber-800' : ''}>
+                      {log.action}
+                    </span>
                   </td>
                   <td className="py-3 px-3 text-neutral-600">
                     {log.details}

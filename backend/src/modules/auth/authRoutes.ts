@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { query, isRdsConnected } from '../../db/rds';
+import { query, isDbConnected } from '../../db/mysql';
 
 const router = Router();
 
@@ -130,9 +130,9 @@ router.post('/login', async (req: Request, res: Response) => {
     });
   }
 
-  // Look for existing user in RDS if connected
+  // Check MySQL if connected
   let user: AuthUserRecord | undefined;
-  if (isRdsConnected()) {
+  if (isDbConnected()) {
     try {
       const rows = await query<any[]>(
         'SELECT id, name, email, phone, role, status FROM users WHERE email = ? OR phone = ? LIMIT 1',
@@ -149,7 +149,7 @@ router.post('/login', async (req: Request, res: Response) => {
         };
       }
     } catch (err: any) {
-      console.warn('[RDS Auth] Error checking user in RDS:', err.message);
+      console.warn('[MySQL Auth] Error checking user in MySQL:', err.message);
     }
   }
 
@@ -171,16 +171,16 @@ router.post('/login', async (req: Request, res: Response) => {
     };
     registeredUsers.push(user);
 
-    // Save to RDS database if connected
-    if (isRdsConnected()) {
+    // Save to MySQL database if connected
+    if (isDbConnected()) {
       try {
         await query(
           'INSERT INTO users (id, name, email, phone, role, status) VALUES (?, ?, ?, ?, ?, ?)',
           [user.id, user.name, user.email, user.phone, user.role, 'ACTIVE']
         );
-        console.log(`👤 [RDS Auth] Devotee '${user.name}' (${user.email}) saved to AWS RDS.`);
+        console.log(`👤 [MySQL Auth] Devotee '${user.name}' (${user.email}) saved to MySQL.`);
       } catch (err: any) {
-        console.warn('[RDS Auth] Failed to insert user into RDS:', err.message);
+        console.warn('[MySQL Auth] Failed to insert user into MySQL:', err.message);
       }
     }
   }
@@ -213,8 +213,8 @@ router.post('/register', async (req: Request, res: Response) => {
   const cleanEmail = email?.trim().toLowerCase() || `${phone}@yatri.brijnidhi.org`;
   const cleanPhone = phone?.trim() || null;
 
-  // Check RDS if connected
-  if (isRdsConnected()) {
+  // Check MySQL if connected
+  if (isDbConnected()) {
     try {
       const rows = await query<any[]>(
         'SELECT id FROM users WHERE email = ? OR (phone IS NOT NULL AND phone = ?) LIMIT 1',
@@ -223,11 +223,11 @@ router.post('/register', async (req: Request, res: Response) => {
       if (rows && rows.length > 0) {
         return res.status(409).json({
           success: false,
-          message: 'An account already exists with this phone or email in database. Please sign in.'
+          message: 'An account already exists with this phone or email in MySQL. Please sign in.'
         });
       }
     } catch (err: any) {
-      console.warn('[RDS Auth] Error checking existing user in RDS:', err.message);
+      console.warn('[MySQL Auth] Error checking existing user in MySQL:', err.message);
     }
   }
 
@@ -252,16 +252,16 @@ router.post('/register', async (req: Request, res: Response) => {
 
   registeredUsers.push(newUser);
 
-  // Persist to RDS MySQL table
-  if (isRdsConnected()) {
+  // Persist to MySQL table
+  if (isDbConnected()) {
     try {
       await query(
         'INSERT INTO users (id, name, email, phone, role, status) VALUES (?, ?, ?, ?, ?, ?)',
         [newUser.id, newUser.name, newUser.email, newUser.phone, newUser.role, 'ACTIVE']
       );
-      console.log(`🎉 [RDS Auth] New user registered & saved to AWS RDS: ${newUser.name} (${newUser.email})`);
+      console.log(`🎉 [MySQL Auth] New user registered & saved to MySQL: ${newUser.name} (${newUser.email})`);
     } catch (err: any) {
-      console.warn('[RDS Auth] Error persisting registered user into RDS:', err.message);
+      console.warn('[MySQL Auth] Error persisting registered user into MySQL:', err.message);
     }
   }
 
@@ -270,6 +270,86 @@ router.post('/register', async (req: Request, res: Response) => {
     message: 'Pilgrim account created successfully. Radhe Radhe!',
     token: `brijnidhi_token_${newUser.id}_${Date.now()}`,
     user: newUser
+  });
+});
+
+// POST /api/auth/google - Authenticate with Google
+router.post('/google', async (req: Request, res: Response) => {
+  const { email, name } = req.body;
+  const userEmail = (email || '').trim().toLowerCase();
+
+  if (!userEmail) {
+    return res.status(400).json({
+      success: false,
+      message: 'Google account email is required.'
+    });
+  }
+
+  const userName = (name || '').trim() || userEmail.split('@')[0];
+  let user: AuthUserRecord | undefined;
+
+  // 1. Check in MySQL if connected
+  if (isDbConnected()) {
+    try {
+      const rows = await query<any[]>(
+        'SELECT id, name, email, phone, role, status FROM users WHERE email = ? LIMIT 1',
+        [userEmail]
+      );
+      if (rows && rows.length > 0) {
+        const row = rows[0];
+        user = {
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          phone: row.phone || 'Google Account',
+          role: row.role
+        };
+      }
+    } catch (err: any) {
+      console.warn('[MySQL Auth] Error checking Google user in MySQL:', err.message);
+    }
+  }
+
+  // 2. Check in in-memory list
+  if (!user) {
+    user = registeredUsers.find((u) => u.email.toLowerCase() === userEmail);
+  }
+
+  // 3. Create user if new
+  if (!user) {
+    user = {
+      id: `usr-g-${Date.now().toString(36)}`,
+      name: userName,
+      email: userEmail,
+      phone: 'Google Account',
+      role: 'CUSTOMER'
+    };
+    registeredUsers.push(user);
+
+    if (isDbConnected()) {
+      try {
+        await query(
+          'INSERT INTO users (id, name, email, phone, role, status) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name)',
+          [user.id, user.name, user.email, user.phone, user.role, 'ACTIVE']
+        );
+        console.log(`🎉 [MySQL Auth] Google user authenticated & saved: ${user.name} (${user.email})`);
+      } catch (err: any) {
+        console.warn('[MySQL Auth] Error inserting Google user into MySQL:', err.message);
+      }
+    }
+  }
+
+  res.json({
+    success: true,
+    message: `Welcome, ${user.name}! Authenticated with Google.`,
+    token: `brijnidhi_google_token_${user.id}_${Date.now()}`,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role
+    }
   });
 });
 

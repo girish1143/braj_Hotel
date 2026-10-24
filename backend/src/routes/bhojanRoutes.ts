@@ -13,7 +13,7 @@ import {
   getReviews, 
   saveReview,
   getBhojanStats
-} from '../db/bhojanRepository';
+} from '../data/bhojanRepository';
 import { Bhojanalaya, BhojanReservation, BhojanMenuItem, BhojanReview } from '../types';
 
 const router = Router();

@@ -9,7 +9,7 @@ export interface AuditEntry {
   timestamp: string;
 }
 
-// In-memory audit log store (backed by database schema)
+// In-memory audit log store
 const auditLogs: AuditEntry[] = [];
 
 export function logAudit(

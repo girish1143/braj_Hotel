@@ -23,8 +23,11 @@ import { fetchPublicNotice } from '../lib/api';
 export default function Navbar() {
   const pathname = usePathname();
 
-  // Completely hide public consumer navbar on all admin portals
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/hotel-admin')) {
+  // Completely hide public consumer navbar on all admin & hotel portals
+  if (
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/hotel')
+  ) {
     return null;
   }
 
@@ -110,15 +113,8 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Helpline & Owner Portal */}
+        {/* Helpline & Quick Links */}
         <div className="flex items-center space-x-4 text-[11px]">
-          <Link
-            href="/admin"
-            className="text-amber-300 hover:text-white font-bold transition-colors flex items-center gap-1"
-          >
-            <span>👑 Owner Portal</span>
-          </Link>
-
           {!isLoggedIn && (
             <Link
               href="/list-property"

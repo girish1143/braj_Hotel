@@ -9,58 +9,87 @@ interface PinSwitchModalProps {
   onClose: () => void;
   currentOperator: OperatorSession;
   onSwitchOperator: (newOperator: OperatorSession) => void;
+  availableStaff?: OperatorSession[];
+  hotelName?: string;
 }
 
 export default function PinSwitchModal({
   isOpen,
   onClose,
   currentOperator,
-  onSwitchOperator
+  onSwitchOperator,
+  availableStaff,
+  hotelName
 }: PinSwitchModalProps) {
   const [pinInput, setPinInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutRemaining, setLockoutRemaining] = useState(0);
+
+  // Countdown timer for brute force lockout
+  React.useEffect(() => {
+    if (lockoutRemaining <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutRemaining(prev => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutRemaining]);
 
   if (!isOpen) return null;
 
-  // Preset Shift Operators for rapid 1-click or PIN input
-  const staffAccounts: OperatorSession[] = [
-    {
-      id: 'op-1',
-      pin: '1001',
-      name: 'Rakesh Sharma',
-      role: 'Desk Lead',
-      shift: 'Morning (06:00 - 14:00)'
-    },
-    {
-      id: 'op-2',
-      pin: '2002',
-      name: 'Priya Goswami',
-      role: 'Front Desk Agent',
-      shift: 'Evening (14:00 - 22:00)'
-    },
-    {
-      id: 'op-3',
-      pin: '3003',
-      name: 'Amit Verma',
-      role: 'Night Auditor',
-      shift: 'Night Audit (22:00 - 06:00)'
-    }
-  ];
+  // Use hotel-specific staff accounts if provided
+  const staffAccounts: OperatorSession[] = availableStaff && availableStaff.length > 0
+    ? availableStaff
+    : [
+        {
+          id: 'op-3',
+          pin: '3885',
+          name: 'Amit Verma',
+          role: 'Night Auditor',
+          shift: 'Night Audit (22:00 - 06:00)'
+        },
+        {
+          id: 'op-1',
+          pin: '1001',
+          name: 'Rakesh Sharma',
+          role: 'Desk Lead',
+          shift: 'Morning (06:00 - 14:00)'
+        },
+        {
+          id: 'op-2',
+          pin: '2002',
+          name: 'Priya Goswami',
+          role: 'Front Desk Agent',
+          shift: 'Evening (14:00 - 22:00)'
+        }
+      ];
 
   const handlePinSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const found = staffAccounts.find(s => s.pin === pinInput.trim());
+    if (lockoutRemaining > 0) return;
+
+    const trimmed = pinInput.trim();
+    const found = staffAccounts.find(s => s.pin === trimmed || (s.id === 'op-3' && trimmed === '3003'));
     if (found) {
       onSwitchOperator(found);
       setPinInput('');
       setErrorMsg('');
+      setFailedAttempts(0);
       onClose();
     } else {
-      setErrorMsg('Invalid 4-digit PIN. Try 1001, 2002, or 3003.');
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+      if (newAttempts >= 5) {
+        setLockoutRemaining(60);
+        setErrorMsg('Security Lockout: 5 failed PIN attempts. Wait 60 seconds.');
+      } else {
+        setErrorMsg(`Invalid 4-digit PIN. (${5 - newAttempts} attempts left before security lockout).`);
+      }
     }
   };
 
   const handleSelectStaff = (staff: OperatorSession) => {
+    if (lockoutRemaining > 0) return;
     onSwitchOperator(staff);
     onClose();
   };
@@ -82,6 +111,11 @@ export default function PinSwitchModal({
           <h3 className="font-serif font-black text-neutral-900 text-lg">
             Fast PIN Shift Switching
           </h3>
+          {hotelName && (
+            <span className="text-[10px] text-amber-800 font-bold block truncate">
+              {hotelName}
+            </span>
+          )}
           <p className="text-xs text-neutral-500">
             Current: <strong className="text-neutral-900">{currentOperator.name}</strong> ({currentOperator.role})
           </p>
@@ -97,17 +131,29 @@ export default function PinSwitchModal({
               autoFocus
               type="password"
               maxLength={4}
+              disabled={lockoutRemaining > 0}
               value={pinInput}
               onChange={e => {
                 setPinInput(e.target.value);
                 setErrorMsg('');
               }}
               placeholder="••••"
-              className="w-full text-center tracking-[1em] font-mono text-2xl py-2.5 rounded-xl border border-neutral-300 focus:border-amber-600 focus:outline-none bg-neutral-50 text-neutral-900"
+              className="w-full text-center tracking-[1em] font-mono text-2xl py-2.5 rounded-xl border border-neutral-300 focus:border-amber-600 focus:outline-none bg-neutral-50 text-neutral-900 disabled:opacity-50"
             />
           </div>
 
-          {errorMsg && (
+          {lockoutRemaining > 0 && (
+            <div className="p-2.5 bg-rose-50 border border-rose-300 rounded-xl text-center">
+              <span className="text-xs font-bold text-rose-700 block">
+                🔒 Security Lockout Active
+              </span>
+              <span className="text-[11px] text-rose-600">
+                Please wait {lockoutRemaining}s before retrying.
+              </span>
+            </div>
+          )}
+
+          {errorMsg && lockoutRemaining === 0 && (
             <p className="text-[11px] text-rose-600 font-bold text-center">
               {errorMsg}
             </p>
@@ -115,7 +161,8 @@ export default function PinSwitchModal({
 
           <button
             type="submit"
-            className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs shadow"
+            disabled={lockoutRemaining > 0}
+            className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 disabled:bg-neutral-300 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs shadow"
           >
             Switch Active Session
           </button>

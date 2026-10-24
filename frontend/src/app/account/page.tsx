@@ -142,10 +142,7 @@ export default function CustomerAccountPage() {
   });
 
   // Saved Guests State
-  const [savedGuests, setSavedGuests] = useState<SavedGuest[]>([
-    { id: 'gst-1', name: 'Sunita Sharma', age: 31, gender: 'Female', relationship: 'Spouse' },
-    { id: 'gst-2', name: 'Ramesh Sharma', age: 62, gender: 'Male', relationship: 'Father' }
-  ]);
+  const [savedGuests, setSavedGuests] = useState<SavedGuest[]>([]);
   const [showAddGuestModal, setShowAddGuestModal] = useState(false);
   const [newGuestForm, setNewGuestForm] = useState<Omit<SavedGuest, 'id'>>({
     name: '',
@@ -175,17 +172,7 @@ export default function CustomerAccountPage() {
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
   // Support Tickets State
-  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([
-    {
-      id: 'TCK-1082',
-      bookingRef: 'BRJ-102938',
-      subject: 'Banke Bihari VIP Darshan pass inquiry',
-      category: 'Temple Darshan Assistance',
-      status: 'RESOLVED',
-      date: '02 Oct 2026',
-      message: 'Can the hotel front desk arrange an e-rickshaw for elderly parents for evening Mangala darshan?'
-    }
-  ]);
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
   const [showNewTicketModal, setShowNewTicketModal] = useState(false);
   const [newTicketForm, setNewTicketForm] = useState({
     bookingRef: '',
@@ -1236,23 +1223,27 @@ export default function CustomerAccountPage() {
               {/* Support Tickets List */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold text-neutral-800 uppercase tracking-wider">My Support Tickets</h4>
-                {supportTickets.map(t => (
-                  <div key={t.id} className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80 text-xs space-y-1.5">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded text-[10px]">{t.id}</span>
-                        <span className="font-bold text-neutral-900">{t.subject}</span>
+                {supportTickets.length === 0 ? (
+                  <p className="text-xs text-neutral-400 italic">No support tickets submitted yet.</p>
+                ) : (
+                  supportTickets.map(t => (
+                    <div key={t.id} className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80 text-xs space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded text-[10px]">{t.id}</span>
+                          <span className="font-bold text-neutral-900">{t.subject}</span>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                          t.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
+                        }`}>
+                          ● {t.status}
+                        </span>
                       </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                        t.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
-                      }`}>
-                        ● {t.status}
-                      </span>
+                      <p className="text-neutral-600 text-[11px] leading-relaxed">{t.message}</p>
+                      <span className="text-[10px] text-neutral-400 block pt-1">{t.category} • Ref: {t.bookingRef} • {t.date}</span>
                     </div>
-                    <p className="text-neutral-600 text-[11px] leading-relaxed">{t.message}</p>
-                    <span className="text-[10px] text-neutral-400 block pt-1">{t.category} • Ref: {t.bookingRef} • {t.date}</span>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
 
               {/* FAQs Accordion */}

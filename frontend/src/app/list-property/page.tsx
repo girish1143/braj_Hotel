@@ -847,6 +847,8 @@ export default function HotelOnboardingPage() {
                     />
                     {errors.govIdNo && <p className="text-red-500 text-[11px] mt-1 font-medium">{errors.govIdNo}</p>}
                   </div>
+                </div>
+
                 <div className="pt-2 border-t border-neutral-100">
                   <S3UploadDropzone
                     label="Attach Business License / Satvik Food Certificate / ID Scan"

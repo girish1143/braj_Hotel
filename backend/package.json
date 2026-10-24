@@ -8,7 +8,9 @@
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "test:s3": "ts-node-dev --transpile-only src/scripts/testS3.ts",
-    "check:db": "ts-node-dev --transpile-only src/scripts/checkDb.ts"
+    "check:db": "ts-node-dev --transpile-only src/scripts/checkDb.ts",
+    "db:users": "ts-node-dev --transpile-only src/scripts/listUsers.ts",
+    "db:add-user": "ts-node-dev --transpile-only src/scripts/addUser.ts"
   },
   "keywords": [
     "braj",
@@ -27,7 +29,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "multer": "^2.4.0",
-    "mysql2": "^3.24.5"
+    "mysql2": "^3.24.6"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
