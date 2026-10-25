@@ -12,7 +12,7 @@ import {
 } from '../../data/bhojanRepository';
 import { getAllBookings, updateBookingStatus, deleteBooking } from '../../routes/bookingRoutes';
 import { Bhojanalaya, BhojanReservation, BookingResponse } from '../../types';
-import { query, isDbConnected } from '../../db/mysql';
+import { getAllUsers, saveUser, deleteUser, getUserById, UserRecord } from '../../data/userStore';
 
 // In-memory state for admin actions
 export interface AdminHotelItem {
@@ -251,12 +251,6 @@ router.get('/public-notice', (req: Request, res: Response) => {
 // ==========================================
 router.use(requireRole('SYSTEM_ADMIN'));
 
-let adminUsers = [
-  { id: 'usr-1', name: 'Girish Sharma', email: 'admin@brijnidhi.org', role: 'SYSTEM_ADMIN', status: 'ACTIVE', joined: '03 Oct 2026' },
-  { id: 'usr-2', name: 'Radha Mohan Das', email: 'partner@vrindavan.org', role: 'HOTEL_ADMIN', status: 'ACTIVE', joined: '04 Oct 2026' },
-  { id: 'usr-3', name: 'Shyam Sundar Seva', email: 'bhojan@mathura.org', role: 'RESTAURANT_MANAGER', status: 'ACTIVE', joined: '04 Oct 2026' }
-];
-
 // 1. Dashboard Overview Metrics (Live dynamic calculations)
 router.get('/overview', async (req: Request, res: Response) => {
   try {
@@ -264,7 +258,7 @@ router.get('/overview', async (req: Request, res: Response) => {
     const totalHotels = adminHotels.length;
     const activeHotels = adminHotels.filter(h => h.status === 'APPROVED').length;
     const pendingApprovals = adminHotels.filter(h => h.status === 'SUBMITTED' || h.status === 'UNDER_REVIEW').length;
-    const totalUsers = adminUsers.length;
+    const totalUsers = getAllUsers().length;
 
     // Bhojan metrics
     const allBhojan = await getBhojanalayas({ status: 'ALL' });
@@ -871,27 +865,11 @@ router.delete('/bookings/:id', (req: Request, res: Response) => {
 // ==========================================
 
 router.get('/users', async (req: Request, res: Response) => {
-  if (isDbConnected()) {
-    try {
-      const dbUsers = await query<any[]>(
-        'SELECT id, name, email, phone, role, status, DATE_FORMAT(created_at, "%d %b %Y") as joined FROM users ORDER BY created_at DESC'
-      );
-      if (dbUsers && dbUsers.length > 0) {
-        return res.json({
-          success: true,
-          total: dbUsers.length,
-          data: dbUsers
-        });
-      }
-    } catch (err: any) {
-      console.warn('[MySQL Admin] Error fetching users from MySQL:', err.message);
-    }
-  }
-
+  const users = getAllUsers();
   res.json({
     success: true,
-    total: adminUsers.length,
-    data: adminUsers
+    total: users.length,
+    data: users
   });
 });
 
@@ -901,28 +879,18 @@ router.post('/users', async (req: Request, res: Response) => {
     return res.status(400).json({ success: false, message: 'Name and email are required' });
   }
 
-  const newUser = {
+  const newUser: UserRecord = {
     id: `usr-${Date.now().toString(36)}`,
     name: name.trim(),
     email: email.trim().toLowerCase(),
-    phone: phone || null,
+    phone: phone || 'Not provided',
     role,
     status,
-    joined: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    joined: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+    created_at: new Date().toISOString()
   };
 
-  adminUsers.unshift(newUser);
-
-  if (isDbConnected()) {
-    try {
-      await query(
-        'INSERT INTO users (id, name, email, phone, role, status) VALUES (?, ?, ?, ?, ?, ?)',
-        [newUser.id, newUser.name, newUser.email, newUser.phone, newUser.role, newUser.status]
-      );
-    } catch (err: any) {
-      console.warn('[MySQL Admin] Error inserting user into MySQL:', err.message);
-    }
-  }
+  saveUser(newUser);
 
   logAudit(
     req.user?.name || 'Project Owner',
@@ -943,13 +911,14 @@ router.post('/users', async (req: Request, res: Response) => {
 router.patch('/users/:id/role', (req: Request, res: Response) => {
   const { id } = req.params;
   const { role } = req.body;
-  const user = adminUsers.find(u => u.id === id);
+  const user = getUserById(id);
 
   if (!user) return res.status(404).json({ success: false, message: 'User not found' });
   if (!role) return res.status(400).json({ success: false, message: 'Role is required' });
 
   const oldRole = user.role;
   user.role = role;
+  saveUser(user);
 
   logAudit(
     req.user?.name || 'Project Owner',
@@ -969,10 +938,11 @@ router.patch('/users/:id/role', (req: Request, res: Response) => {
 
 router.patch('/users/:id/suspend', (req: Request, res: Response) => {
   const { id } = req.params;
-  const user = adminUsers.find(u => u.id === id);
+  const user = getUserById(id);
   if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
   user.status = user.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
+  saveUser(user);
 
   logAudit(
     req.user?.name || 'Project Owner',
@@ -988,21 +958,21 @@ router.patch('/users/:id/suspend', (req: Request, res: Response) => {
 
 router.delete('/users/:id', (req: Request, res: Response) => {
   const { id } = req.params;
-  const idx = adminUsers.findIndex(u => u.id === id);
-  if (idx === -1) return res.status(404).json({ success: false, message: 'User not found' });
+  const user = getUserById(id);
+  if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-  const [deletedUser] = adminUsers.splice(idx, 1);
+  deleteUser(id);
 
   logAudit(
     req.user?.name || 'Project Owner',
     'USER_DELETED',
     'User',
     id,
-    `Deleted user account ${deletedUser.email}`,
+    `Deleted user account ${user.email}`,
     req.ip
   );
 
-  res.json({ success: true, message: `User '${deletedUser.name}' removed.` });
+  res.json({ success: true, message: `User '${user.name}' removed.` });
 });
 
 // ==========================================

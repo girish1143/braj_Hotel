@@ -1,0 +1,62 @@
+[
+  {
+    "id": "usr-mvnnrqby",
+    "name": "Devotee Anuj",
+    "email": "anuj.test@braj.org",
+    "phone": "9898989898",
+    "role": "SYSTEM_ADMIN",
+    "status": "ACTIVE",
+    "joined": "25 Oct 2026",
+    "created_at": "2026-10-25T10:01:49.604Z"
+  },
+  {
+    "id": "usr-admin-01",
+    "name": "Girish Sharma",
+    "email": "admin@brijnidhi.org",
+    "phone": "+91 99999 88888",
+    "role": "SYSTEM_ADMIN",
+    "status": "ACTIVE",
+    "joined": "24 Oct 2026",
+    "created_at": "2026-10-25T10:01:38.377Z"
+  },
+  {
+    "id": "usr-admin-02",
+    "name": "Girish Sharma",
+    "email": "girish@braj.org",
+    "phone": "9999988888",
+    "role": "SYSTEM_ADMIN",
+    "status": "ACTIVE",
+    "joined": "24 Oct 2026",
+    "created_at": "2026-10-25T10:01:38.379Z"
+  },
+  {
+    "id": "usr-admin-03",
+    "name": "System Administrator",
+    "email": "admin@brijnidhi.com",
+    "phone": "+91 99999 00000",
+    "role": "SYSTEM_ADMIN",
+    "status": "ACTIVE",
+    "joined": "24 Oct 2026",
+    "created_at": "2026-10-25T10:01:38.379Z"
+  },
+  {
+    "id": "usr-devotee-01",
+    "name": "Girish Sharma",
+    "email": "girishsharma1143@gmail.com",
+    "phone": "9149026598",
+    "role": "CUSTOMER",
+    "status": "ACTIVE",
+    "joined": "24 Oct 2026",
+    "created_at": "2026-10-25T10:01:38.379Z"
+  },
+  {
+    "id": "usr-devotee-02",
+    "name": "Radhe Krishna Das",
+    "email": "radhe.test@gmail.com",
+    "phone": "Google Account",
+    "role": "CUSTOMER",
+    "status": "ACTIVE",
+    "joined": "24 Oct 2026",
+    "created_at": "2026-10-25T10:01:38.379Z"
+  }
+]

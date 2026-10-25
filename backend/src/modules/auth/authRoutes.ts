@@ -1,27 +1,15 @@
 import { Router, Request, Response } from 'express';
-import { query, isDbConnected } from '../../db/mysql';
+import {
+  UserRecord,
+  getAllUsers,
+  getUserById,
+  getUserByEmail,
+  getUserByPhone,
+  getUserByIdentifier,
+  saveUser
+} from '../../data/userStore';
 
 const router = Router();
-
-// In-memory registered users registry for session management
-interface AuthUserRecord {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: 'CUSTOMER' | 'HOTEL_ADMIN' | 'SYSTEM_ADMIN';
-  passwordHash?: string;
-}
-
-const registeredUsers: AuthUserRecord[] = [
-  {
-    id: 'usr-admin-01',
-    name: 'Girish Sharma',
-    email: 'admin@brijnidhi.org',
-    phone: '+91 99999 88888',
-    role: 'SYSTEM_ADMIN'
-  }
-];
 
 // OTP Store for mobile and email verification
 const otpStore: Record<string, { code: string; expiresAt: number; verified: boolean }> = {};
@@ -130,59 +118,22 @@ router.post('/login', async (req: Request, res: Response) => {
     });
   }
 
-  // Check MySQL if connected
-  let user: AuthUserRecord | undefined;
-  if (isDbConnected()) {
-    try {
-      const rows = await query<any[]>(
-        'SELECT id, name, email, phone, role, status FROM users WHERE email = ? OR phone = ? LIMIT 1',
-        [loginKey, loginKey]
-      );
-      if (rows && rows.length > 0) {
-        const row = rows[0];
-        user = {
-          id: row.id,
-          name: row.name,
-          email: row.email,
-          phone: row.phone || loginKey,
-          role: row.role
-        };
-      }
-    } catch (err: any) {
-      console.warn('[MySQL Auth] Error checking user in MySQL:', err.message);
-    }
-  }
-
-  // Fallback to in-memory store
-  if (!user) {
-    user = registeredUsers.find(
-      (u) => u.email.toLowerCase() === loginKey || u.phone.includes(loginKey)
-    );
-  }
+  let user = getUserByIdentifier(loginKey);
 
   if (!user) {
     const isPhone = /^\d+$/.test(loginKey.replace(/[^0-9]/g, ''));
     user = {
-      id: `usr-${Date.now()}`,
+      id: `usr-${Date.now().toString(36)}`,
       name: name?.trim() || (isPhone ? `Devotee (${loginKey.slice(-4)})` : loginKey.split('@')[0]),
       email: isPhone ? `${loginKey}@yatri.brijnidhi.org` : loginKey,
       phone: isPhone ? loginKey : '+91 98000 00000',
-      role: 'CUSTOMER'
+      role: 'CUSTOMER',
+      status: 'ACTIVE',
+      joined: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+      created_at: new Date().toISOString()
     };
-    registeredUsers.push(user);
-
-    // Save to MySQL database if connected
-    if (isDbConnected()) {
-      try {
-        await query(
-          'INSERT INTO users (id, name, email, phone, role, status) VALUES (?, ?, ?, ?, ?, ?)',
-          [user.id, user.name, user.email, user.phone, user.role, 'ACTIVE']
-        );
-        console.log(`👤 [MySQL Auth] Devotee '${user.name}' (${user.email}) saved to MySQL.`);
-      } catch (err: any) {
-        console.warn('[MySQL Auth] Failed to insert user into MySQL:', err.message);
-      }
-    }
+    saveUser(user);
+    console.log(`👤 [Auth] Devotee '${user.name}' (${user.email}) registered and saved.`);
   }
 
   res.json({
@@ -213,57 +164,29 @@ router.post('/register', async (req: Request, res: Response) => {
   const cleanEmail = email?.trim().toLowerCase() || `${phone}@yatri.brijnidhi.org`;
   const cleanPhone = phone?.trim() || null;
 
-  // Check MySQL if connected
-  if (isDbConnected()) {
-    try {
-      const rows = await query<any[]>(
-        'SELECT id FROM users WHERE email = ? OR (phone IS NOT NULL AND phone = ?) LIMIT 1',
-        [cleanEmail, cleanPhone]
-      );
-      if (rows && rows.length > 0) {
-        return res.status(409).json({
-          success: false,
-          message: 'An account already exists with this phone or email in MySQL. Please sign in.'
-        });
-      }
-    } catch (err: any) {
-      console.warn('[MySQL Auth] Error checking existing user in MySQL:', err.message);
-    }
-  }
+  const existingEmail = getUserByEmail(cleanEmail);
+  const existingPhone = cleanPhone ? getUserByPhone(cleanPhone) : null;
 
-  const existing = registeredUsers.find(
-    (u) => (email && u.email.toLowerCase() === email.toLowerCase()) || (phone && u.phone === phone)
-  );
-
-  if (existing) {
+  if (existingEmail || existingPhone) {
     return res.status(409).json({
       success: false,
       message: 'An account already exists with this phone or email. Please sign in.'
     });
   }
 
-  const newUser: AuthUserRecord = {
-    id: `usr-${Date.now()}`,
+  const newUser: UserRecord = {
+    id: `usr-${Date.now().toString(36)}`,
     name: name.trim(),
     email: cleanEmail,
     phone: cleanPhone || 'Not provided',
-    role: 'CUSTOMER'
+    role: 'CUSTOMER',
+    status: 'ACTIVE',
+    joined: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+    created_at: new Date().toISOString()
   };
 
-  registeredUsers.push(newUser);
-
-  // Persist to MySQL table
-  if (isDbConnected()) {
-    try {
-      await query(
-        'INSERT INTO users (id, name, email, phone, role, status) VALUES (?, ?, ?, ?, ?, ?)',
-        [newUser.id, newUser.name, newUser.email, newUser.phone, newUser.role, 'ACTIVE']
-      );
-      console.log(`🎉 [MySQL Auth] New user registered & saved to MySQL: ${newUser.name} (${newUser.email})`);
-    } catch (err: any) {
-      console.warn('[MySQL Auth] Error persisting registered user into MySQL:', err.message);
-    }
-  }
+  saveUser(newUser);
+  console.log(`🎉 [Auth] New user registered & saved: ${newUser.name} (${newUser.email})`);
 
   res.json({
     success: true,
@@ -286,57 +209,21 @@ router.post('/google', async (req: Request, res: Response) => {
   }
 
   const userName = (name || '').trim() || userEmail.split('@')[0];
-  let user: AuthUserRecord | undefined;
+  let user = getUserByEmail(userEmail);
 
-  // 1. Check in MySQL if connected
-  if (isDbConnected()) {
-    try {
-      const rows = await query<any[]>(
-        'SELECT id, name, email, phone, role, status FROM users WHERE email = ? LIMIT 1',
-        [userEmail]
-      );
-      if (rows && rows.length > 0) {
-        const row = rows[0];
-        user = {
-          id: row.id,
-          name: row.name,
-          email: row.email,
-          phone: row.phone || 'Google Account',
-          role: row.role
-        };
-      }
-    } catch (err: any) {
-      console.warn('[MySQL Auth] Error checking Google user in MySQL:', err.message);
-    }
-  }
-
-  // 2. Check in in-memory list
-  if (!user) {
-    user = registeredUsers.find((u) => u.email.toLowerCase() === userEmail);
-  }
-
-  // 3. Create user if new
   if (!user) {
     user = {
       id: `usr-g-${Date.now().toString(36)}`,
       name: userName,
       email: userEmail,
       phone: 'Google Account',
-      role: 'CUSTOMER'
+      role: 'CUSTOMER',
+      status: 'ACTIVE',
+      joined: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+      created_at: new Date().toISOString()
     };
-    registeredUsers.push(user);
-
-    if (isDbConnected()) {
-      try {
-        await query(
-          'INSERT INTO users (id, name, email, phone, role, status) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name)',
-          [user.id, user.name, user.email, user.phone, user.role, 'ACTIVE']
-        );
-        console.log(`🎉 [MySQL Auth] Google user authenticated & saved: ${user.name} (${user.email})`);
-      } catch (err: any) {
-        console.warn('[MySQL Auth] Error inserting Google user into MySQL:', err.message);
-      }
-    }
+    saveUser(user);
+    console.log(`🎉 [Auth] Google devotee authenticated & saved: ${user.name} (${user.email})`);
   }
 
   res.json({

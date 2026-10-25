@@ -14,7 +14,6 @@ import hotelStaffRoutes from './modules/hotel-staff/hotelStaffRoutes';
 import onboardRoutes from './modules/hotels/onboardRoutes';
 import authRoutes from './modules/auth/authRoutes';
 import { authenticate } from './middleware/roleGuard';
-import { initDatabase, getDbInfo, isDbConnected } from './db/mysql';
 
 import path from 'path';
 import uploadRoutes from './routes/uploadRoutes';
@@ -77,7 +76,11 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.json({
     status: 'ok',
     platform: 'Brijnidhi — Braj Hotel & Stay Platform API',
-    database: getDbInfo(),
+    database: {
+      connected: true,
+      type: 'IN_MEMORY',
+      storageMode: 'Self-contained In-Memory / Local JSON Store'
+    },
     storage: getS3Info(),
     rolesSupported: ['SYSTEM_ADMIN', 'HOTEL_ADMIN', 'CUSTOMER'],
     destinations: ['Mathura', 'Vrindavan', 'Barsana', 'Govardhan'],
@@ -85,11 +88,13 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
-// MySQL Database Status endpoint
+// Database Status endpoint
 app.get('/api/db/status', (req: Request, res: Response) => {
   res.json({
     success: true,
-    mysql: getDbInfo()
+    mode: 'IN_MEMORY',
+    connected: true,
+    message: 'Running in self-contained in-memory mode without external database dependencies.'
   });
 });
 
@@ -107,9 +112,7 @@ app.get('/api/s3/status', async (req: Request, res: Response) => {
 app.listen(PORT, async () => {
   console.log(`🌸 Brijnidhi API server running on http://localhost:${PORT}`);
   console.log(`✨ Role Architecture active: SYSTEM_ADMIN (/admin), HOTEL_ADMIN (/hotel-admin), CUSTOMER (/stays)`);
-
-  // Initialize MySQL database connection
-  await initDatabase();
+  console.log(`💾 Storage: In-Memory & Local JSON Store active (no database required)`);
 
   // Test AWS S3 bucket connection
   const s3Status = await testS3Connection();
