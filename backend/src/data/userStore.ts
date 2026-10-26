@@ -1,5 +1,4 @@
-import fs from 'fs';
-import path from 'path';
+import { getDb } from '../db/sqlite';
 
 export interface UserRecord {
   id: string;
@@ -12,141 +11,134 @@ export interface UserRecord {
   created_at?: string;
 }
 
-const STORE_PATH = path.join(__dirname, 'usersStore.json');
-
-const DEFAULT_USERS: UserRecord[] = [
-  {
-    id: 'usr-admin-01',
-    name: 'Girish Sharma',
-    email: 'admin@brijnidhi.org',
-    phone: '+91 99999 88888',
-    role: 'SYSTEM_ADMIN',
-    status: 'ACTIVE',
-    joined: '24 Oct 2026',
-    created_at: new Date().toISOString()
-  },
-  {
-    id: 'usr-admin-02',
-    name: 'Girish Sharma',
-    email: 'girish@braj.org',
-    phone: '9999988888',
-    role: 'SYSTEM_ADMIN',
-    status: 'ACTIVE',
-    joined: '24 Oct 2026',
-    created_at: new Date().toISOString()
-  },
-  {
-    id: 'usr-admin-03',
-    name: 'System Administrator',
-    email: 'admin@brijnidhi.com',
-    phone: '+91 99999 00000',
-    role: 'SYSTEM_ADMIN',
-    status: 'ACTIVE',
-    joined: '24 Oct 2026',
-    created_at: new Date().toISOString()
-  },
-  {
-    id: 'usr-devotee-01',
-    name: 'Girish Sharma',
-    email: 'girishsharma1143@gmail.com',
-    phone: '9149026598',
-    role: 'CUSTOMER',
-    status: 'ACTIVE',
-    joined: '24 Oct 2026',
-    created_at: new Date().toISOString()
-  },
-  {
-    id: 'usr-devotee-02',
-    name: 'Radhe Krishna Das',
-    email: 'radhe.test@gmail.com',
-    phone: 'Google Account',
-    role: 'CUSTOMER',
-    status: 'ACTIVE',
-    joined: '24 Oct 2026',
-    created_at: new Date().toISOString()
-  }
-];
-
-let users: UserRecord[] = [...DEFAULT_USERS];
-
-function loadUsers(): void {
-  try {
-    if (fs.existsSync(STORE_PATH)) {
-      const raw = fs.readFileSync(STORE_PATH, 'utf-8');
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        users = parsed;
-        return;
-      }
-    }
-  } catch (err: any) {
-    console.warn('[UserStore] Error loading users from disk:', err.message);
-  }
-  persistUsers();
-}
-
-function persistUsers(): void {
-  try {
-    const dir = path.dirname(STORE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(STORE_PATH, JSON.stringify(users, null, 2), 'utf-8');
-  } catch (err: any) {
-    console.warn('[UserStore] Error saving users to disk:', err.message);
-  }
-}
-
-// Initialize on module load
-loadUsers();
-
 export function getAllUsers(): UserRecord[] {
-  return [...users];
+  const db = getDb();
+  const rows = db.prepare(`
+    SELECT 
+      id, name, email, phone, role, status, created_at,
+      strftime('%d %b %Y', created_at) as joined
+    FROM users
+    ORDER BY created_at DESC
+  `).all() as any[];
+
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    phone: r.phone || '',
+    role: r.role,
+    status: r.status,
+    joined: r.joined || 'Recent',
+    created_at: r.created_at
+  }));
 }
 
 export function getUserById(id: string): UserRecord | undefined {
-  return users.find((u) => u.id === id);
+  const db = getDb();
+  const r = db.prepare(`
+    SELECT 
+      id, name, email, phone, role, status, created_at,
+      strftime('%d %b %Y', created_at) as joined
+    FROM users 
+    WHERE id = ?
+  `).get(id) as any;
+
+  if (!r) return undefined;
+  return {
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    phone: r.phone || '',
+    role: r.role,
+    status: r.status,
+    joined: r.joined || 'Recent',
+    created_at: r.created_at
+  };
 }
 
 export function getUserByEmail(email: string): UserRecord | undefined {
   const clean = (email || '').trim().toLowerCase();
-  return users.find((u) => u.email.toLowerCase() === clean);
+  const db = getDb();
+  const r = db.prepare(`
+    SELECT 
+      id, name, email, phone, role, status, created_at,
+      strftime('%d %b %Y', created_at) as joined
+    FROM users 
+    WHERE LOWER(email) = ?
+  `).get(clean) as any;
+
+  if (!r) return undefined;
+  return {
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    phone: r.phone || '',
+    role: r.role,
+    status: r.status,
+    joined: r.joined || 'Recent',
+    created_at: r.created_at
+  };
 }
 
 export function getUserByPhone(phone: string): UserRecord | undefined {
   const clean = (phone || '').replace(/[^0-9]/g, '');
-  return users.find((u) => u.phone && u.phone.replace(/[^0-9]/g, '').includes(clean));
+  if (!clean) return undefined;
+
+  const db = getDb();
+  const r = db.prepare(`
+    SELECT 
+      id, name, email, phone, role, status, created_at,
+      strftime('%d %b %Y', created_at) as joined
+    FROM users 
+    WHERE phone LIKE ?
+  `).get(`%${clean.slice(-10)}%`) as any;
+
+  if (!r) return undefined;
+  return {
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    phone: r.phone || '',
+    role: r.role,
+    status: r.status,
+    joined: r.joined || 'Recent',
+    created_at: r.created_at
+  };
 }
 
 export function getUserByIdentifier(identifier: string): UserRecord | undefined {
   const clean = (identifier || '').trim().toLowerCase();
-  return users.find(
-    (u) =>
-      u.email.toLowerCase() === clean ||
-      (u.phone && u.phone.toLowerCase() === clean) ||
-      (u.phone && u.phone.replace(/[^0-9]/g, '').endsWith(clean.slice(-10)))
-  );
+  const byEmail = getUserByEmail(clean);
+  if (byEmail) return byEmail;
+  return getUserByPhone(clean);
 }
 
 export function saveUser(user: UserRecord): UserRecord {
-  const idx = users.findIndex(
-    (u) => u.id === user.id || u.email.toLowerCase() === user.email.toLowerCase()
+  const db = getDb();
+  const stmt = db.prepare(`
+    INSERT INTO users (id, name, email, phone, role, status)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(email) DO UPDATE SET
+      name = excluded.name,
+      phone = excluded.phone,
+      role = excluded.role,
+      status = excluded.status
+  `);
+
+  stmt.run(
+    user.id,
+    user.name,
+    user.email.trim().toLowerCase(),
+    user.phone || null,
+    user.role || 'CUSTOMER',
+    user.status || 'ACTIVE'
   );
-  if (idx !== -1) {
-    users[idx] = { ...users[idx], ...user };
-  } else {
-    users.unshift(user);
-  }
-  persistUsers();
-  return user;
+
+  return getUserByEmail(user.email) || user;
 }
 
 export function deleteUser(id: string): boolean {
-  const idx = users.findIndex((u) => u.id === id);
-  if (idx !== -1) {
-    users.splice(idx, 1);
-    persistUsers();
-    return true;
-  }
-  return false;
+  const db = getDb();
+  const res = db.prepare('DELETE FROM users WHERE id = ?').run(id);
+  return res.changes > 0;
 }

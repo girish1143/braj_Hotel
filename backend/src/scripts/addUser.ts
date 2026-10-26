@@ -36,9 +36,9 @@ function addUser() {
 
   saveUser(newUser);
 
-  console.log(`✅ Success! User '${name}' (${email}) is now saved in user registry.`);
+  console.log(`✅ Success! User '${name}' (${email}) is now saved in SQLite database.`);
   const all = getAllUsers();
-  console.log(`\n📋 Current users in system (${all.length}):`);
+  console.log(`\n📋 Current users in SQLite database (${all.length}):`);
   console.table(
     all.map((u) => ({
       id: u.id,

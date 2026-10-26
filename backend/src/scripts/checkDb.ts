@@ -1,14 +1,22 @@
-import { getAllUsers } from '../data/userStore';
+import { initSqlite, getDbStats } from '../db/sqlite';
 
-function checkStorage() {
-  console.log('\n🔍 --- Brijnidhi Storage Diagnostic ---');
-  console.log('Mode:       Standalone In-Memory & Local JSON Store');
-  console.log('Database:   None required (Zero external DB dependency)');
-  console.log('-----------------------------------------------------\n');
+function checkDatabase() {
+  initSqlite();
+  const stats = getDbStats();
 
-  const users = getAllUsers();
-  console.log(`✅ Storage subsystem active. Registered users in store: ${users.length}`);
-  console.log('\n🎉 Storage diagnostic test passed. System is ready to run without MySQL!\n');
+  console.log('\n🔍 --- Brijnidhi SQLite Database Diagnostic ---');
+  console.log(`Status:    ${stats.connected ? '✅ Connected' : '❌ Disconnected'}`);
+  console.log(`Engine:    ${stats.type}`);
+  console.log(`Location:  ${stats.path}`);
+  console.log(`File Size: ${stats.sizeFormatted}`);
+  console.log('--------------------------------------------------\n');
+
+  console.log('📋 Database Tables & Row Counts:');
+  for (const [table, count] of Object.entries(stats.tables)) {
+    console.log(`   - ${table.padEnd(22)} : ${count} rows`);
+  }
+
+  console.log('\n🎉 SQLite database diagnostic test passed successfully!\n');
 }
 
-checkStorage();
+checkDatabase();

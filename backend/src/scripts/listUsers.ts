@@ -2,7 +2,7 @@ import { getAllUsers } from '../data/userStore';
 
 function listUsers() {
   const users = getAllUsers();
-  console.log(`\n👥 Total Users in System (In-Memory / JSON Store): ${users.length}\n`);
+  console.log(`\n👥 Total Users in SQLite Database: ${users.length}\n`);
   if (users.length === 0) {
     console.log('No users registered yet.');
   } else {
